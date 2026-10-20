@@ -1,5 +1,10 @@
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/wordmark-tri-light.svg">
+  <img src="assets/brand/wordmark-tri.svg" alt="syforce" width="360">
+</picture>
+
 # syforce
 
 **系统力导向图 · OS force-directed graph**
