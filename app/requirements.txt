@@ -1,2 +1,2 @@
 psutil>=5.9
-nvidia-ml-py>=12.0 ; sys_platform == "linux"
+nvidia-ml-py>=12.0 ; platform_system == "Linux" or platform_system == "Windows"

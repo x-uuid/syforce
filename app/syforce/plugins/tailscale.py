@@ -3,7 +3,10 @@ import json, os, shutil, threading, time
 from ..util import run, log
 
 CANDIDATES = ["tailscale", "/usr/local/bin/tailscale", "/opt/homebrew/bin/tailscale", "/usr/bin/tailscale",
-              "/Applications/Tailscale.app/Contents/MacOS/Tailscale", r"C:\Program Files\Tailscale\tailscale.exe"]
+              "/Applications/Tailscale.app/Contents/MacOS/Tailscale"]
+if os.name == "nt":
+    CANDIDATES += [os.path.join(os.environ[e], "Tailscale", "tailscale.exe") for e in ("ProgramW6432", "ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA")
+                   if os.environ.get(e)] + [r"C:\Program Files\Tailscale\tailscale.exe"]
 
 
 class Tailscale:
@@ -12,7 +15,7 @@ class Tailscale:
         self.lock = threading.Lock(); self.data = {"ok": False}; self.prev = {}; self.prev_t = None; self.ips = set()
         conf = cfg["tailscale"]
         self.enabled = str(conf.get("enabled", "auto")).lower() != "false"
-        self.bin = conf.get("binary") or next((c for c in CANDIDATES if shutil.which(c) or os.path.exists(c)), "")
+        self.bin = conf.get("binary") or next((shutil.which(c) or c for c in CANDIDATES if shutil.which(c) or os.path.isfile(c)), "")
 
     def start(self):
         if self.enabled and self.bin:

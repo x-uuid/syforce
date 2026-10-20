@@ -24,7 +24,7 @@
 ![no build](https://img.shields.io/badge/frontend-single%20HTML%2C%20no%20build-success)
 ![macOS](https://img.shields.io/badge/macOS-ready-brightgreen)
 ![Linux](https://img.shields.io/badge/Linux-ready-brightgreen)
-![Windows](https://img.shields.io/badge/Windows-adapt%20me-orange)
+![Windows 11](https://img.shields.io/badge/Windows%2011-tested-brightgreen)
 
 </div>
 
@@ -81,7 +81,8 @@ python server.py --demo        # synthetic data, no collectors, safe for screens
 |---|---|---|
 | **macOS** (Apple Silicon / Intel) | ✅ ready | `proc_pid_rusage`, `netstat -anvb` per-socket bytes, IOKit/`ioreg` GPU, `sysctl` memory pressure, launchd |
 | **Linux** (x86_64 / aarch64) | ✅ ready | `/proc`, `ss -tinp` per-socket bytes, NVML GPU (`nvidia-ml-py`) or `nvidia-smi`, PSI, systemd user service |
-| **Windows** 10/11 | 🟠 needs adapting | psutil + `nvidia-smi` stub works for the basics; per-socket bytes / non-NVIDIA GPU are TODOs in `app/syforce/collectors/windows.py` — **PRs welcome** |
+| **Windows** 11 | ✅ tested | `NtQuerySystemInformation` processes (all users, no admin), adapter-type NICs, NVML GPU (`nvidia-ml-py`) or `nvidia-smi`, Task Scheduler; no per-socket bytes or temperatures without admin |
+| **Windows** 10 | 🟡 untested | same code path |
 
 可选插件（检测到才显示）/ optional plugins, shown only when detected: **Tailscale** peers & exit node · **OpenAI-compatible model servers** (vLLM / SGLang / llama.cpp / Ollama, read-only `GET /v1/models`, `/health`, `/metrics`) · **Docker** container attribution · **topology** (default gateway + first private traceroute hops, labelled generically).
 
@@ -116,12 +117,12 @@ All screenshots are taken with `--demo` (documentation IP ranges, generic names)
 
 ```
 app/server.py                  HTTP + SSE + sampler orchestration (--demo, --port, --config)
-app/syforce/collectors/        common.py (psutil) · linux.py · macos.py · windows.py (stub)
+app/syforce/collectors/        common.py (psutil) · linux.py · macos.py · windows.py
 app/syforce/plugins/           tailscale.py · models.py · docker.py · topology.py
 app/syforce/demo.py            synthetic data for --demo
 app/static/index.html          the whole UI (canvas, physics, i18n), no build step
 app/config.example.json        names, hide list, ports, language, fps mode
-service/                       launchd plist · systemd user unit · Windows Task Scheduler script
+service/                       launchd plist · systemd user unit · Windows Task Scheduler install/uninstall
 AGENT_PROMPT.md                spec + copy-paste prompt for AI agents
 ```
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """syforce — OS force-directed graph. Real-time system topology dashboard, one process, SSE, no build step.
 
-    python server.py                 # real collectors for this OS (macOS / Linux; Windows = stub)
+    python server.py                 # real collectors for this OS (macOS / Linux / Windows)
     python server.py --port 9001     # choose port (default from config.json or 9001)
     python server.py --demo          # synthetic data, no collectors, safe for screenshots
     python server.py --config my.json
+    python server.py --log syforce.log   # append output to a file (automatic under pythonw)
 
 Read-only by design: never controls model servers, containers or services.
 """
@@ -81,7 +82,7 @@ def real_sampler():
 
     psutil.cpu_percent(percpu=True)
     prev_net = psutil.net_io_counters(pernic=True); prev_disk = psutil.disk_io_counters(perdisk=True) or {}
-    prev_t = time.time(); tick = 0; vols = col.volumes(); nic_ips = {}; talkers = {}; ns_seen = 0
+    prev_t = time.time(); tick = 0; vols = col.volumes(); nic_ips = {}; nic_speed = {}; nic_up = set(); talkers = {}; ns_seen = 0; power = {}
     ov_prev = None; overhead = {"self": None, "children": None, "total": None}; me = psutil.Process()
     time.sleep(1)
     while True:
@@ -108,7 +109,9 @@ def real_sampler():
                 try:
                     st = psutil.net_if_stats(); nic_ips.clear()
                     nic_ips.update({n: next((a.address for a in ad if a.family == socket.AF_INET), "") for n, ad in psutil.net_if_addrs().items() if st.get(n) and st[n].isup})
+                    nic_speed.clear(); nic_speed.update(col.link_speeds(st)); nic_up.clear(); nic_up.update(n for n, x in st.items() if x.isup)
                 except Exception: pass
+                power = {"battery": col.battery(), "temps": col.temps()}
             net = psutil.net_io_counters(pernic=True); nics = []
             for n, c in net.items():
                 p = prev_net.get(n)
@@ -118,7 +121,8 @@ def real_sampler():
                 rx = max(0, c.bytes_recv - p.bytes_recv) / dt; tx = max(0, c.bytes_sent - p.bytes_sent) / dt
                 if kind == "lo" or (kind == "virtual" and n != main and rx + tx < 2048): continue
                 if kind == "other" and n != main and not nic_ips.get(n) and rx + tx < 2048: continue
-                nics.append({"name": n, "kind": kind, "rx": rx, "tx": tx, "ip": nic_ips.get(n, ""), "main": n == main, "tail": kind == "tail", "wifi": kind == "wifi"})
+                if nic_up and n not in nic_up and n != main and rx + tx < 2048: continue    # unplugged NIC / Wi-Fi off
+                nics.append({"name": n, "kind": kind, "rx": rx, "tx": tx, "ip": nic_ips.get(n, ""), "speed": nic_speed.get(n), "main": n == main, "tail": kind == "tail", "wifi": kind == "wifi"})
             prev_net = net
             nics.sort(key=lambda x: (not x["main"], {"wired": 1, "wifi": 2, "tail": 3}.get(x["kind"], 4), x["name"]))
             dk = psutil.disk_io_counters(perdisk=True) or {}; disks = []
@@ -195,7 +199,7 @@ def real_sampler():
             snap = {
                 "t": t0, "time": now_str(), "host": CFG["host_label"] or host, "title": CFG["title"] or "syforce", "platform": plat, "os": col.os_name,
                 "features": {"gpu": bool(gpu.get("present")), "models": bool(ms), "tail": bool(ts.get("ok")),
-                             "wifi": any(x["wifi"] for x in nics), "docker": docker.ok, "demo": False},
+                             "wifi": any(x["wifi"] for x in nics), "docker": docker.ok, "battery": bool(power.get("battery")), "demo": False},
                 "cpu": {"total": round(cpu_total, 1), "per": [round(v) for v in percpu], "labels": col.cpu_labels, "kinds": col.cpu_kinds,
                         "load": [round(x, 2) for x in col.loadavg()], "n": col.ncpu, "freq": freqs},
                 "mem": {"total": vm.total, "used": vm.total - vm.available, "avail": vm.available, "pct": vm.percent,
@@ -207,7 +211,7 @@ def real_sampler():
                 "net": {"rx": mn["rx"], "tx": mn["tx"], "procs": nprocs, "hosts": top_hosts, "conn": nconn, "age": round(t0 - nupd, 1) if nupd else None},
                 "procs": {"cpu": top_cpu, "mem": top_mem, "count": pcount},
                 "models": ms, "manager": models.manager_info(), "tok": round(tok, 1),
-                "tail": ts, "topo": {"hops": hops}, "ping": pings,
+                "tail": ts, "topo": {"hops": hops}, "ping": pings, "battery": power.get("battery"), "temps": power.get("temps"),
                 "overhead": overhead, "clients": CLIENTS[0], "panel": panel.data,
             }
             finalize(snap)
@@ -232,7 +236,7 @@ class H(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-cache"); self.end_headers(); self.wfile.write(body)
 
     def send_json(self, obj):
-        self.send_bytes(200, json.dumps(obj, ensure_ascii=False).encode(), "application/json")
+        self.send_bytes(200, json.dumps(obj, ensure_ascii=False).encode(), "application/json; charset=utf-8")
 
     def do_GET(self):
         path = self.path.split("?", 1)[0]
@@ -300,10 +304,16 @@ class H(BaseHTTPRequestHandler):
 
 
 class Server(ThreadingHTTPServer):
-    daemon_threads = True; allow_reuse_address = True
+    daemon_threads = True
+    allow_reuse_address = os.name != "nt"     # on Windows SO_REUSEADDR lets a 2nd instance bind the same port
+
+    def server_bind(self):
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
     def handle_error(self, request, client_address):
         e = sys.exc_info()[1]
-        if isinstance(e, (ConnectionResetError, BrokenPipeError, TimeoutError)): return
+        if isinstance(e, (ConnectionError, TimeoutError)): return     # incl. WinError 10053 ConnectionAbortedError
         super().handle_error(request, client_address)
 
 
@@ -314,7 +324,14 @@ def main():
     ap.add_argument("--bind", default=None, help="bind address (default: config or 0.0.0.0)")
     ap.add_argument("--config", default=os.environ.get("SYFORCE_CONFIG"), help="path to config.json")
     ap.add_argument("--demo", action="store_true", help="synthetic demo data (no collectors)")
+    ap.add_argument("--log", default=os.environ.get("SYFORCE_LOG"), help="append stdout/stderr to this file")
     a = ap.parse_args()
+    if a.log or sys.stdout is None or sys.stderr is None:      # pythonw has no console: keep logs instead of crashing
+        lp = a.log or os.path.join(HERE, "syforce.log")
+        try:
+            if os.path.getsize(lp) > 5 * MB: os.replace(lp, lp + ".1")
+        except OSError: pass
+        sys.stdout = sys.stderr = open(lp, "a", encoding="utf-8", buffering=1, errors="replace")
     CFG = Config(a.config)
     if a.port: CFG.data["port"] = a.port
     elif os.environ.get("SYFORCE_PORT"): CFG.data["port"] = int(os.environ["SYFORCE_PORT"])
@@ -329,7 +346,10 @@ def main():
     threading.Thread(target=target, daemon=True).start()
     log("syforce %s on http://%s:%d/" % ("DEMO" if a.demo else "live", bind, port))
     Server.address_family = socket.AF_INET6 if ":" in bind else socket.AF_INET
-    Server((bind, port), H).serve_forever()
+    try:
+        Server((bind, port), H).serve_forever()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

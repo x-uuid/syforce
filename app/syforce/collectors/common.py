@@ -9,6 +9,8 @@ Hook contract (all return plain JSON-able dicts/lists; see AGENT_PROMPT.md "data
   sample_procs()                  fills self.top_cpu / top_disk / top_mem / count / io_denied / by_ctr
   sample_net()                    fills self.net (procs, flows, conn, listen, port_owner, updated)
   gpu_sample()                    {"present": bool, "name", "util", "temp", "power", "clock_sm", "mem_used", "mem_total", "procs": []}
+  battery()                       {"pct", "plugged", "secs_left"} or None (no battery)
+  temps()                         {"cpu": °C, ...} or None (no readable sensors)
   nic_kind(name)                  "wired" | "wifi" | "tail" | "virtual" | "lo" | "other"
   main_nic()                      interface carrying the default route
   default_gateway()               IPv4 of the default gateway or ""
@@ -22,6 +24,7 @@ from ..util import run, log, MB, CLIENTS, split_hp
 
 class BaseCollector:
     os_name = "generic"
+    smi_bin = "nvidia-smi"
 
     def __init__(self, cfg):
         self.cfg = cfg
@@ -146,7 +149,7 @@ class BaseCollector:
 
     def nvidia_smi(self):
         if self._smi is False: return {"present": False}
-        out = run(["nvidia-smi", "--query-gpu=name,utilization.gpu,temperature.gpu,power.draw,clocks.sm,memory.used,memory.total,pstate",
+        out = run([self.smi_bin, "--query-gpu=name,utilization.gpu,temperature.gpu,power.draw,clocks.sm,memory.used,memory.total,pstate",
                    "--format=csv,noheader,nounits"], timeout=4)
         sp = [x.strip() for x in out.split("\n")[0].split(",")] if out else []
         if len(sp) < 5:
@@ -158,6 +161,17 @@ class BaseCollector:
         return {"present": True, "name": sp[0], "util": f(sp[1]), "temp": f(sp[2]), "power": f(sp[3]), "clock_sm": f(sp[4]),
                 "mem_used": mu * MB if mu is not None else None, "mem_total": mt * MB if mt is not None else None,
                 "pstate": (sp[7][1:] if len(sp) > 7 and sp[7].startswith("P") else None), "procs": [], "src": "nvidia-smi"}
+
+    # ---------- battery / sensors (slow-changing; the server polls these every ~15 s) ----------
+    def battery(self):
+        try: b = psutil.sensors_battery()
+        except Exception: b = None
+        if b is None: return None
+        left = b.secsleft if isinstance(b.secsleft, (int, float)) and b.secsleft >= 0 else None
+        return {"pct": round(b.percent, 1), "plugged": b.power_plugged, "secs_left": left}
+
+    def temps(self):
+        return None
 
     # ---------- disks ----------
     def real_disk(self, name):
@@ -173,6 +187,10 @@ class BaseCollector:
         return vols
 
     # ---------- interfaces / routing ----------
+    def link_speeds(self, stats):
+        """{nic: Mbps} from psutil.net_if_stats() output; 0 / unknown omitted."""
+        return {n: s.speed for n, s in stats.items() if s.speed and s.speed > 0}
+
     def nic_kind(self, n):
         ln = n.lower()
         if ln in ("lo", "lo0") or ln.startswith("loopback"): return "lo"

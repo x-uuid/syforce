@@ -9,6 +9,7 @@ CMD_COST = {}            # "cmd arg0" -> [count, wall seconds]   exposed at /api
 
 
 def log(msg):
+    if sys.stdout is None: return          # pythonw without a log file
     sys.stdout.write(msg + "\n"); sys.stdout.flush()
 
 
@@ -22,7 +23,8 @@ def run(cmd, timeout=5):
     try:
         kw = {}
         if os.name == "nt":
-            kw["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+            # no console flash under pythonw; tools emit UTF-8 (tailscale/docker) or ASCII digits (route/ping/tracert)
+            kw.update(creationflags=0x08000000, stdin=subprocess.DEVNULL, encoding="utf-8", errors="replace")  # CREATE_NO_WINDOW
         return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, **kw).stdout
     except Exception:
         return ""

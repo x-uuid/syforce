@@ -93,7 +93,7 @@
 |---|---|---|---|---|---|
 | macOS | `proc_pid_rusage`（他人进程用 `ps` 每 30 s 近似） | `netstat -anvb`（全用户，免 sudo，约 10 ms） | IOKit `IOAccelerator` / `ioreg`，**仅整机利用率；无 sudo 拿不到每进程 GPU**（powermetrics 需要 root，不要用） | `kern.memorystatus_vm_pressure_level` | `route -n get default`、`traceroute -n` |
 | Linux | `/proc/<pid>/stat`（全用户），`/proc/<pid>/io`（仅本用户） | `ss -tinp`（字节全用户；**root 拥有的 socket 无 pid，除非 sudo**——不要为此提权，显示为 `:端口`/`?`） | NVML（`nvidia-ml-py`）→ `nvidia-smi` 回退；统一内存平台 `mem_total` 可能为空 | `/proc/pressure/memory` PSI | `/proc/net/route`、`traceroute`/`tracepath` |
-| Windows | psutil | **psutil 无每连接字节**：TODO 用 GetPerTcpConnectionEStats / ETW（需管理员）或 PDH 进程 IO 近似 | `nvidia-smi`；非 NVIDIA 用 PDH `\GPU Engine(*)\Utilization Percentage` | PDH `\Memory\Available MBytes`、提交量 | `route print`、`tracert -d` |
+| Windows | `NtQuerySystemInformation` 一次快照（全用户，免管理员）；名称 = exe 名去 `.exe`，`app` = FileDescription | **无每连接字节**（GetPerTcpConnectionEStats / ETW 需管理员）：主机只有连接数 | NVML → `nvidia-smi`；非 NVIDIA 无面板；无温度传感器 | 提交量（`K32GetPerformanceInfo`） | `GetAdaptersAddresses` 网关、`tracert -d` |
 
 - ICMP：优先免权限 ICMP socket（macOS 允许；Linux 取决于 `net.ipv4.ping_group_range`），否则调用系统 `ping`。
 - 拓扑节点**一律泛称**（网关、路由、路由 2…），真实名字只通过 `config.json` 的 `names` 提供。只保留私网段的 traceroute 跳。
@@ -103,7 +103,7 @@
 
 - **macOS（launchd）**：`service/macos/com.syforce.dashboard.plist`，把 `__APP__` 换成 app 绝对路径，放到 `~/Library/LaunchAgents/`，`launchctl bootstrap gui/$(id -u) <plist>`。
 - **Linux（systemd 用户服务 + linger）**：`service/linux/syforce.service` → `~/.config/systemd/user/`，`systemctl --user daemon-reload && systemctl --user enable --now syforce`，`sudo loginctl enable-linger $USER`（开机自启、注销不停）。
-- **Windows**：`service/windows/install-task.ps1`（计划任务，登录启动、失败重启）或 NSSM。需要局域网访问时放行防火墙端口。
+- **Windows**：管理员 PowerShell 运行 `service/windows/install-task.ps1`（venv + 计划任务：开机/登录启动、S4U 以当前用户运行、pythonw 隐藏、防火墙放行 Private 9001；可选 `-PublicLanSubnet` 在局域网被标为 Public 时放行本子网）；卸载 `uninstall-task.ps1`。控制：`syforce-ctl.ps1 start|stop|restart|status`。计划任务停在 Queued 时 start 改为直接拉起；单实例 supervisor 在进程退出后重启。
 - 端口默认 9001；若被占用，改 `config.json` 的 `port` 或 `--port`。
 
 ## 6. 安全规则（硬性）
@@ -120,7 +120,7 @@
 1. `python3 --version` ≥ 3.9；创建 venv；`pip install -r requirements.txt`。
 2. `python server.py --demo --port 9001` → 浏览器打开，无控制台错误 → 停止。
 3. `python server.py --port 9001` → `curl -s localhost:9001/api/state` 检查字段（第 3 节）。
-4. 按需修 collector（只改 `app/syforce/collectors/<os>.py` 或 plugins）；Windows 先完成 `windows.py` 的 TODO 1–3。
+4. 按需修 collector（只改 `app/syforce/collectors/<os>.py` 或 plugins）。
 5. 写 `app/config.json`（从 `config.example.json` 复制）。
 6. 安装服务（第 5 节），确认开机/登录后自动运行。
 
@@ -190,7 +190,7 @@ See the JSON schema in section 3 above (identical for all OSes and for `--demo`)
 
 - **macOS** — processes via `proc_pid_rusage` (other users' processes approximated with `ps` every 30 s); per-socket bytes via `netstat -anvb` (all users, no sudo, ~10 ms); GPU via IOKit `IOAccelerator` / `ioreg` — **device-wide only, no per-process GPU without sudo** (powermetrics needs root: don't); memory pressure via `kern.memorystatus_vm_pressure_level`; gateway `route -n get default`.
 - **Linux** — `/proc/<pid>/stat` for all users, `/proc/<pid>/io` only for your own; per-socket bytes via `ss -tinp` (bytes for all users, but **root-owned sockets have no pid unless run with sudo** — do not escalate, they show as `:port`/`?`); GPU via NVML (`nvidia-ml-py`) with `nvidia-smi` fallback (unified-memory boards may report no `mem_total`); PSI from `/proc/pressure/memory`; gateway from `/proc/net/route`.
-- **Windows** — psutil basics work; psutil has **no per-connection byte counters** (TODO: GetPerTcpConnectionEStats / ETW, admin, or PDH per-process IO as an approximation); GPU via `nvidia-smi`, non-NVIDIA via PDH `\GPU Engine(*)\Utilization Percentage`; memory pressure via PDH; gateway `route print`, hops `tracert -d`. See TODOs in `app/syforce/collectors/windows.py`.
+- **Windows** — processes from one `NtQuerySystemInformation` snapshot (all users, no admin; name = exe without `.exe`, `app` = FileDescription); NIC kind from `GetAdaptersAddresses` (vEthernet/WSL/Hyper-V = virtual, Tailscale = tail); GPU via NVML, `nvidia-smi` fallback, non-NVIDIA = no panel; **no per-connection bytes** (GetPerTcpConnectionEStats / ETW need admin) and no temperatures; memory pressure from commit charge; gateway from `GetAdaptersAddresses`, hops `tracert -d`.
 - ICMP: unprivileged ICMP socket first (allowed on macOS; Linux depends on `net.ipv4.ping_group_range`), else the system `ping`.
 - Topology nodes are **generic** (Gateway, Router, Router 2 …); real names only via `config.json` `names`. Only private-range traceroute hops are kept.
 - Tailscale plugin hides itself if the binary or `status --json` is missing. The models plugin probes configured ports plus auto-discovered listening ports and shows only endpoints that answer `GET /v1/models` (or Ollama `/api/tags`).
@@ -199,7 +199,7 @@ See the JSON schema in section 3 above (identical for all OSes and for `--demo`)
 
 - **macOS (launchd)** — `service/macos/com.syforce.dashboard.plist`: replace `__APP__`, copy to `~/Library/LaunchAgents/`, `launchctl bootstrap gui/$(id -u) <plist>`.
 - **Linux (systemd user + linger)** — `service/linux/syforce.service` → `~/.config/systemd/user/`, `systemctl --user daemon-reload && systemctl --user enable --now syforce`, `sudo loginctl enable-linger $USER`.
-- **Windows** — `service/windows/install-task.ps1` (Task Scheduler at logon, restart on failure) or NSSM. Open the firewall port for LAN access.
+- **Windows** — elevated PowerShell: `service/windows/install-task.ps1` (venv + Scheduled Task at startup and logon, runs as you via S4U, hidden pythonw, firewall rule for 9001 on Private; optional `-PublicLanSubnet` allows the local subnet when the LAN is Public); remove with `uninstall-task.ps1`. Control: `syforce-ctl.ps1 start|stop|restart|status`. If Task Scheduler leaves the task Queued, start launches it directly; a single-instance supervisor restarts the server if it exits.
 - Default port 9001; change with `config.json` `port` or `--port`.
 
 ## 6. Safety rules (hard)
@@ -212,7 +212,7 @@ See the JSON schema in section 3 above (identical for all OSes and for `--demo`)
 
 ## 7. Deploy checklist and acceptance tests
 
-**Checklist** — (1) Python ≥ 3.9, venv, `pip install -r requirements.txt`; (2) `--demo` runs with no console errors; (3) live mode `/api/state` matches section 3; (4) fix only the OS collector / plugins (Windows: TODO 1–3 first); (5) write `app/config.json`; (6) install the service and confirm it starts at boot/logon.
+**Checklist** — (1) Python ≥ 3.9, venv, `pip install -r requirements.txt`; (2) `--demo` runs with no console errors; (3) live mode `/api/state` matches section 3; (4) fix only the OS collector / plugins; (5) write `app/config.json`; (6) install the service and confirm it starts at boot/logon.
 
 **Acceptance tests**
 - [ ] `/healthz` → `ok`; `/api/state` updates every second (`t` increases).
