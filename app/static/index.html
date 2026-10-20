@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>syforce</title>
+<link rel="icon" href="data:,">
+<style>
+:root{--bg:#05070d;--panel:#0b1020;--line:#1a2340;--txt:#d6def5;--dim:#7d89ab;--cy:#3ee0ff;--vi:#b36bff;--go:#ffcc33;--rd:#ff4d6d;--gr:#4dff9a;--or:#ff9d3b;--vh:100vh;--toph:48px}
+@supports (height:100dvh){:root{--vh:100dvh}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.45 -apple-system,"PingFang SC","Hiragino Sans GB","Hiragino Sans","Microsoft YaHei",sans-serif}
+body{overflow:hidden}
+#app{display:flex;flex-direction:column;height:var(--vh)}
+#top{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 14px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#070b18,#0a0f22)}
+#top h1{font-size:18px;margin:0 6px 0 0;letter-spacing:1px;color:var(--cy)}
+#top .sp1{flex:1 1 0}
+.chip{padding:3px 9px;border:1px solid var(--line);border-radius:12px;background:#0d1428;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:12px}
+.chip i{font-style:normal;color:var(--dim);margin-right:4px}
+button.chip{color:var(--txt);cursor:pointer;font:inherit;font-size:12px}button.chip:hover{border-color:#3a4c88}
+#modeBtn{color:var(--gr)}
+#conn.ok{color:var(--gr)}#conn.bad{color:var(--rd)}
+#c-self{border-color:#5a4a10}#c-selfv{color:#ffe066}
+.c-ai{color:#b4ff3c}#t-models td:nth-child(1){width:40%}#t-models td:nth-child(2){width:26%}#t-models td:nth-child(3){width:15%}#t-models td:nth-child(4){width:19%}.c-load{color:var(--go)}
+#main{flex:1 1 auto;min-height:0;display:flex}
+#stage{position:relative;flex:1 1 auto;min-width:0;min-height:0;overflow:hidden;background:radial-gradient(ellipse at 44% 47%,#0b1430 0%,#060a16 55%,#04060c 100%)}
+#stage::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(60,90,160,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(60,90,160,.06) 1px,transparent 1px);background-size:40px 40px}
+#cv{position:absolute;left:0;top:0;display:block}
+#now{position:absolute;left:10px;top:8px;z-index:4;max-width:62%;padding:3px 12px;border-radius:14px;background:rgba(10,16,34,.82);border:1px solid #233063;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;pointer-events:none}
+#now .k{color:var(--dim);margin-right:6px}
+#focusChip{position:absolute;left:10px;top:38px;z-index:4;padding:3px 10px;border-radius:14px;background:rgba(40,32,6,.9);border:1px solid var(--go);color:#ffe9a0;font-size:12px;cursor:pointer;display:none;max-width:50%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#side{flex:0 0 400px;width:400px;min-width:0;border-left:1px solid var(--line);background:var(--panel);overflow-y:auto;padding:4px 12px 30px}
+body.noside #side{display:none}
+section{min-width:0;break-inside:avoid}
+#side h3{margin:12px 0 6px;font-size:12px;color:var(--dim);font-weight:600;letter-spacing:1px;border-bottom:1px solid var(--line);padding-bottom:3px}
+.sp{display:grid;grid-template-columns:84px minmax(0,1fr) 100px;align-items:center;gap:6px;margin:3px 0}
+.sp .n{color:var(--dim);font-size:12px}.sp .v{text-align:right;font-variant-numeric:tabular-nums;font-size:12px}
+.sp canvas{width:100%;height:30px;display:block}
+#cores{display:flex;gap:2px;height:30px;align-items:stretch;margin:6px 0 2px}
+#cores div{flex:1 1 0;min-width:0;background:#18213d;position:relative;border-radius:2px;overflow:hidden}
+#cores div i{position:absolute;left:0;right:0;bottom:0;background:var(--c)}
+#corelab{display:flex;gap:2px;font-size:9px;color:var(--dim)}#corelab span{flex:1 1 0;min-width:0;text-align:center;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;table-layout:fixed}
+td{padding:2px 4px;border-bottom:1px solid #121a33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+td.r{text-align:right}td.d{color:var(--dim)}
+td.nm{width:48%}td.nm small{color:var(--dim);margin-left:5px;font-size:10.5px}
+tr[data-fk]{cursor:pointer}tr[data-fk]:hover td{background:#111a36}
+tr.fdim{opacity:.25}tr.fhl td{background:rgba(255,204,51,.08)}tr.fsel td{background:rgba(255,204,51,.18)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.badge{font-size:10px;padding:0 5px;border-radius:7px;margin-left:4px;border:1px solid}
+.b-exit{color:var(--go);border-color:var(--go)}.b-act{color:var(--vi);border-color:var(--vi)}.b-self{color:#ffe066;border-color:#ffe066}
+.selfbox{background:#0e1530;border:1px solid #233063;border-radius:8px;padding:5px 8px;margin:4px 0}
+#alerts .a{padding:3px 6px;margin:3px 0;border-left:3px solid var(--or);background:#0e1530;border-radius:3px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#alerts .a.crit{border-color:var(--rd)}#alerts .a.info{border-color:var(--cy)}
+#alerts .a .t{color:var(--dim);font-size:11px;margin-right:6px}
+#toasts{position:absolute;top:40px;left:50%;transform:translateX(-50%);z-index:5;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.toast{padding:7px 16px;border-radius:10px;background:rgba(30,10,20,.92);border:1px solid var(--rd);box-shadow:0 0 24px rgba(255,77,109,.5);animation:pop .35s ease-out;font-size:14px;font-weight:600;white-space:nowrap}
+.toast.warn{border-color:var(--or);box-shadow:0 0 24px rgba(255,157,59,.45);background:rgba(30,20,8,.92)}
+.toast.info{border-color:var(--cy);box-shadow:0 0 24px rgba(62,224,255,.4);background:rgba(6,22,30,.92)}
+.toast small{color:var(--dim);font-weight:400;margin-left:8px}
+.toast.out{opacity:0;transition:opacity .6s}
+@keyframes pop{0%{transform:scale(.6) translateY(-20px);opacity:0}70%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+#legend{position:absolute;left:8px;bottom:6px;right:8px;font-size:10.5px;color:var(--dim);pointer-events:none}
+#legend span{margin-right:10px;white-space:nowrap}
+#tip{position:absolute;pointer-events:none;background:rgba(10,14,30,.95);border:1px solid #2a3a6a;padding:4px 8px;border-radius:6px;font-size:12px;display:none;z-index:6;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#perf{position:absolute;right:10px;top:8px;font-size:10px;color:#4a5578;pointer-events:none}
+/* icons: one set, 24-unit grid, 1.75 stroke, round caps/joins, currentColor */
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-4px;color:var(--dim);overflow:visible}
+.ic.f{fill:currentColor;stroke:none}
+td .ic,.sp .ic,#alerts .ic{margin-right:6px}td .ic.tr{margin:0 0 0 5px}
+#side h3{display:flex;align-items:center;gap:6px}
+.c-lan{color:var(--cy)}.c-inet{color:#5b8cff}.c-ts{color:var(--vi)}.c-ok{color:var(--gr)}.c-exit{color:var(--go)}.c-off{color:#3a4260}.c-warn{color:var(--or)}.c-crit{color:var(--rd)}.c-info{color:var(--cy)}.c-self{color:#ffe066}
+#top{position:relative;z-index:10}
+#top .ib{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:26px;min-width:30px;padding:0 7px;line-height:1}
+#top .ib .ic{width:18px;height:18px;color:inherit;vertical-align:0}
+#top .ib:hover{color:var(--cy)}
+#conn{display:inline-flex;align-items:center;gap:5px}#conn .ic{width:10px;height:10px;color:inherit;vertical-align:0}
+#legend .ic{width:10px;height:10px;color:inherit;vertical-align:-1px;margin-right:4px}
+.toast .ic{width:16px;height:16px;color:inherit;margin-right:7px;vertical-align:-3px}
+.toast.crit .ic,.toast:not(.warn):not(.info) .ic{color:var(--rd)}.toast.warn .ic{color:var(--or)}.toast.info .ic{color:var(--cy)}
+td.ind{padding-left:26px}
+#langWrap{position:relative;display:inline-flex}
+#langMenu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:136px;padding:4px;background:rgba(12,18,38,.98);border:1px solid #2a3a6a;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
+#langMenu[hidden]{display:none}
+#langMenu button{display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px 6px 8px;border:0;border-radius:6px;background:none;color:var(--txt);font:inherit;font-size:12.5px;cursor:pointer;text-align:left;white-space:nowrap}
+#langMenu button:hover{background:#16214a}
+#langMenu button .ic{color:var(--cy);visibility:hidden;vertical-align:0}
+#langMenu button.on{color:var(--cy)}#langMenu button.on .ic{visibility:visible}
+#clock{display:inline-block;width:calc(8.4ch + 20px);text-align:center;font-variant-numeric:tabular-nums}
+#exitBtn{color:var(--dim)}#exitBtn #exitN{font-size:11px;font-variant-numeric:tabular-nums}#exitBtn #exitN:empty{display:none}#exitBtn.on{color:var(--go);border-color:#5a4a10}#exitBtn.on .ic{color:var(--go)}
+#langBtn[aria-expanded="true"]{border-color:#3a4c88;color:var(--cy)}
+/* scrollbars: WebKit/Blink */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+/* scrollbars: Firefox */
+@supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}*:hover{scrollbar-color:rgba(255,255,255,.25) transparent}}
+#rbar{display:flex;align-items:center;gap:2px;margin-right:4px}
+.rb{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 7px;border:1px solid transparent;border-radius:8px;background:none;color:var(--txt);cursor:pointer;font:inherit;font-size:11.5px;font-variant-numeric:tabular-nums;line-height:1}
+.rb .ic{width:18px;height:18px;vertical-align:0}
+.rb:hover{background:#111a36}.rb:hover .ic{color:var(--txt)}
+.rb.on{background:rgba(62,224,255,.12);border-color:rgba(62,224,255,.45)}.rb.on .ic{color:var(--cy)}
+.rv{display:inline-block;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rv[data-w=p]{width:4.4ch}.rv[data-w=r]{width:4.9ch}.rv[data-w=n]{width:2.2ch}.rv[data-w=ms]{width:5.8ch}.rv[data-w=sp]{width:5.4ch}.rv[data-w=a]{width:18px}
+.rv.hot{color:var(--or)}.rv.crit{color:var(--rd)}
+.rv.bd{height:16px;padding:0;border-radius:8px;background:var(--or);color:#140a00;font-size:10px;font-weight:700;line-height:16px;text-align:center}
+#side{flex:0 0 360px;width:360px;padding:0 10px 20px}
+#side .sh{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;background:var(--panel);padding:10px 0 6px;border-bottom:1px solid var(--line)}
+#side .sh h3{flex:1 1 auto;margin:0;border:0;padding:0}
+#side .hc{color:#4a5578;font-weight:400;margin-left:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:22px;border:0;background:none;color:var(--dim);cursor:pointer;padding:0}
+.seg button+button{border-left:1px solid var(--line)}.seg button .ic{width:16px;height:16px;vertical-align:0;color:inherit}
+.seg button:hover{color:var(--txt)}.seg button.on{background:rgba(62,224,255,.12);color:var(--cy)}
+.hr{position:relative;padding:6px 6px 7px;border-bottom:1px solid #121a33;cursor:pointer}
+.hr:hover{background:#111a36}
+.hr .h1{display:flex;align-items:center;font-size:12.5px;white-space:nowrap}
+.hr .h1 .ic{margin-right:6px}
+.hr .hn{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.hr .q{flex:0 0 74px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px}
+.hr .q.tx{color:var(--dim)}
+.hr .h2{display:flex;gap:8px;padding-left:22px;margin-top:1px;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden}
+.hr .hip{flex:0 0 auto;color:#5d6889}.hr .hps{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.pp{color:#9fb0dc}.pp:hover{color:var(--cy)}
+.hr .hb{position:absolute;left:28px;bottom:1px;height:2px;border-radius:1px;opacity:.55}
+.hr.fdim{opacity:.25}.hr.fhl{background:rgba(255,204,51,.08)}.hr.fsel{background:rgba(255,204,51,.18)}
+#pop{position:fixed;z-index:15;width:420px;max-width:calc(100vw - 16px);display:flex;flex-direction:column;background:rgba(9,13,28,.985);border:1px solid #263463;border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.55)}
+#pop[hidden]{display:none}
+#pop .ph{display:flex;align-items:center;gap:8px;padding:8px 8px 7px 12px;cursor:grab;user-select:none;-webkit-user-select:none;border-bottom:1px solid #1a2446;flex:none}
+#pop .ph.drag{cursor:grabbing}
+#pop .ph .ic{width:18px;height:18px;color:var(--cy);vertical-align:0}
+#pop .ph b{font-size:13px}#pop .pv{color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#pop .sp1{flex:1 1 0}
+#pop .px{border:0;background:none;color:var(--dim);cursor:pointer;padding:3px;display:inline-flex;border-radius:6px}#pop .px:hover{color:var(--txt);background:#16214a}
+#pop .px .ic{width:18px;height:18px;color:inherit}
+#pop .pb{overflow-y:auto;padding:10px 12px 12px;min-height:0}
+.pane{display:none}.pane.on{display:block}
+.chw{position:relative;margin:0 0 8px}
+.chw canvas{display:block;width:100%;height:110px;border-radius:6px;background:#0c1328}
+.chw.s canvas{height:64px}
+.chw .cl{position:absolute;left:8px;top:5px;font-size:11px;color:var(--dim);pointer-events:none}
+.chw .cv{position:absolute;right:8px;top:5px;font-size:11.5px;font-variant-numeric:tabular-nums;text-align:right;pointer-events:none;text-shadow:0 0 3px #000}
+.kv{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:12px;margin:6px 0 8px;font-variant-numeric:tabular-nums}.kv i{font-style:normal;color:var(--dim);margin-right:4px}
+#pop #cores{height:40px}
+#pop #alerts .a{white-space:nowrap}
+@media (max-width:1199px){
+ body{overflow-x:hidden;overflow-y:auto}
+ #app{height:auto;min-height:var(--vh)}
+ #main{display:block}
+ #stage{height:calc(var(--vh) - var(--toph));min-height:420px}
+ #side{width:auto;border-left:0;border-top:1px solid var(--line);overflow:visible;display:block;padding:0 14px 30px}
+}
+[hidden]{display:none!important}
+#cv.grab{cursor:grabbing!important}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol><symbol id="i-languages" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></symbol><symbol id="i-maximize" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></symbol><symbol id="i-minimize" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></symbol><symbol id="i-panel" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></symbol><symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol><symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol><symbol id="i-cpu" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></symbol><symbol id="i-mem" viewBox="0 0 24 24"><path d="M6 19v-3M10 19v-3M14 19v-3M18 19v-3M8 11V9M12 11V9M16 11V9"/><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.84V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.06a2 2 0 0 0 0-3.84Z"/></symbol><symbol id="i-gpu" viewBox="0 0 24 24"><path d="M2 21V3"/><path d="M2 5h18a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2.26"/><path d="M7 17v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1v-3"/><circle cx="16" cy="11" r="2"/><circle cx="8" cy="11" r="2"/></symbol><symbol id="i-updown" viewBox="0 0 24 24"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></symbol><symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol><symbol id="i-drive" viewBox="0 0 24 24"><path d="M22 12H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M6 16h.01M10 16h.01"/></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol><symbol id="i-network" viewBox="0 0 24 24"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></symbol><symbol id="i-timer" viewBox="0 0 24 24"><path d="M10 2h4"/><path d="m12 14 3-3"/><circle cx="12" cy="14" r="8"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"/></symbol><symbol id="i-ether" viewBox="0 0 24 24"><path d="m15 20 3-3h2a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h2l3 3z"/><path d="M6 8v1M10 8v1M14 8v1M18 8v1"/></symbol><symbol id="i-wifi" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.86a10 10 0 0 1 14 0"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/></symbol><symbol id="i-app" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 4v4M2 8h20M6 4v4"/></symbol><symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></symbol><symbol id="i-house" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .71-1.53l7-6a2 2 0 0 1 2.58 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol><symbol id="i-laptop" viewBox="0 0 24 24"><path d="M18 5a2 2 0 0 1 2 2v8.53a2 2 0 0 0 .21.9l1.07 2.12a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45l1.07-2.12A2 2 0 0 0 4 15.53V7a2 2 0 0 1 2-2z"/><path d="M20.05 16H3.95"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol><symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></symbol><symbol id="i-exit" viewBox="0 0 24 24"><g stroke="none" fill="currentColor"><circle cx="4" cy="8" r="2" opacity=".35"/><circle cx="10" cy="8" r="2" opacity=".35"/><circle cx="4" cy="14" r="2"/><circle cx="10" cy="14" r="2"/><circle cx="16" cy="14" r="2"/><circle cx="4" cy="20" r="2" opacity=".35"/><circle cx="10" cy="20" r="2"/><circle cx="16" cy="20" r="2" opacity=".35"/></g><path d="M14 10 21 3"/><path d="M15.5 3H21v5.5"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol></svg>
+<div id="app">
+<div id="top"><h1 id="ttl">syforce</h1>
+<nav id="rbar"><button class="rb" data-p="cpu"><svg class="ic"><use href="#i-cpu"/></svg><span class="rv" data-w="p" id="rv-cpu"></span></button><button class="rb" data-p="mem"><svg class="ic"><use href="#i-mem"/></svg><span class="rv" data-w="p" id="rv-mem"></span></button><button class="rb" data-p="gpu" hidden><svg class="ic"><use href="#i-gpu"/></svg><span class="rv" data-w="p" id="rv-gpu"></span></button><button class="rb" data-p="models" hidden><svg class="ic"><use href="#i-sparkles"/></svg><span class="rv" data-w="r" id="rv-models"></span></button><button class="rb" data-p="disk"><svg class="ic"><use href="#i-drive"/></svg><span class="rv" data-w="r" id="rv-disk"></span></button><button class="rb" data-p="net"><svg class="ic"><use href="#i-updown"/></svg><span class="rv" data-w="r" id="rv-net"></span></button><button class="rb" data-p="tail" hidden><svg class="ic"><use href="#i-network"/></svg><span class="rv" data-w="n" id="rv-tail"></span></button><button class="rb" data-p="ping"><svg class="ic"><use href="#i-timer"/></svg><span class="rv" data-w="ms" id="rv-ping"></span></button><button class="rb" data-p="alert"><svg class="ic"><use href="#i-bell"/></svg><span class="rv" data-w="a" id="rv-alert"></span></button><button class="rb" data-p="self"><svg class="ic"><use href="#i-gauge"/></svg><span class="rv" data-w="sp" id="rv-self"></span></button></nav>
+<span class="sp1"></span>
+<button class="chip ib" id="exitBtn" hidden><svg class="ic"><use href="#i-exit"/></svg><span id="exitN"></span></button><button class="chip ib" id="modeBtn"></button><span id="langWrap"><button class="chip ib" id="langBtn" aria-haspopup="menu" aria-expanded="false"><svg class="ic"><use href="#i-languages"/></svg></button><div id="langMenu" role="menu" hidden><button data-l="zh" role="menuitemradio"><svg class="ic"><use href="#i-check"/></svg>中文</button><button data-l="en" role="menuitemradio"><svg class="ic"><use href="#i-check"/></svg>English</button><button data-l="ja" role="menuitemradio"><svg class="ic"><use href="#i-check"/></svg>日本語</button></div></span><button class="chip ib" id="sideBtn"><svg class="ic"><use href="#i-panel"/></svg></button><button class="chip ib" id="fsBtn"><svg class="ic"><use href="#i-maximize"/></svg></button>
+<span class="chip" id="conn"><svg class="ic f"><use href="#i-dot"/></svg><span></span></span><span class="chip" id="clock">--:--:--</span></div>
+<div id="main"><div id="stage"><canvas id="cv"></canvas>
+<div id="now"><span class="k" data-i18n="此刻">此刻</span><span id="nowtxt">…</span></div>
+<div id="focusChip"></div><div id="toasts"></div><div id="tip"></div>
+<div id="legend"><span data-f="models" style="color:#b4ff3c"><svg class="ic f"><use href="#i-dot"/></svg><span data-i18n="模型">模型</span></span><span style="color:#3ee0ff"><svg class="ic f"><use href="#i-dot"/></svg><span>LAN</span></span><span style="color:#5b8cff"><svg class="ic f"><use href="#i-dot"/></svg><span data-i18n="互联网">互联网</span></span><span data-f="tail" style="color:#b36bff"><svg class="ic f"><use href="#i-dot"/></svg><span>Tailnet</span></span><span data-f="tail" style="color:#ffcc33"><svg class="ic f"><use href="#i-dot"/></svg><span data-i18n="出口">出口</span></span><span style="color:#ff9d3b"><svg class="ic f"><use href="#i-dot"/></svg><span data-i18n="磁盘">磁盘</span></span><span data-f="gpu" style="color:#4dff9a"><svg class="ic f"><use href="#i-dot"/></svg><span>GPU</span></span><span style="color:#ff5ca8"><svg class="ic f"><use href="#i-dot"/></svg><span>CPU</span></span><span style="color:#ffe066"><svg class="ic f"><use href="#i-dot"/></svg><span data-i18n="内存">内存</span></span></div>
+<div id="perf"></div></div>
+<div id="side"><div class="sh"><h3><svg class="ic"><use href="#i-globe"/></svg><span data-i18n="远端主机">远端主机</span><span class="hc" id="hostN"></span></h3><div class="seg" id="hsort"><button data-s="t"><svg class="ic"><use href="#i-updown"/></svg></button><button data-s="rx"><svg class="ic"><use href="#i-down"/></svg></button><button data-s="tx"><svg class="ic"><use href="#i-up"/></svg></button></div></div><div id="hosts"></div></div></div><div id="pop" hidden><div class="ph" id="popH"><span id="popI"></span><b id="popT"></b><span class="pv" id="popV"></span><span class="sp1"></span><button class="px" id="popX"><svg class="ic"><use href="#i-x"/></svg></button></div><div class="pb"><div class="pane" data-p="cpu"><div class="chw"><span class="cv" id="cv-cpu"></span><canvas id="ch-cpu"></canvas></div><div id="cores"></div><div id="corelab"></div><div class="kv" id="kv-cpu"></div><table id="t-cpu"></table></div><div class="pane" data-p="mem"><div class="chw"><span class="cv" id="cv-mem"></span><canvas id="ch-mem"></canvas></div><div class="kv" id="kv-mem"></div><table id="t-mem"></table></div><div class="pane" data-p="gpu"><div class="chw"><span class="cv" id="cv-gpu"></span><canvas id="ch-gpu"></canvas></div><div class="chw s" id="w-gt"><span class="cl" data-i18n="温度">温度</span><span class="cv" id="cv-gt"></span><canvas id="ch-gt"></canvas></div><div class="chw s" id="w-gw"><span class="cl" data-i18n="功耗">功耗</span><span class="cv" id="cv-gw"></span><canvas id="ch-gw"></canvas></div><div class="kv" id="kv-gpu"></div><table id="t-gpu"></table></div><div class="pane" data-p="models"><div class="chw"><span class="cv" id="cv-models"></span><canvas id="ch-models"></canvas></div><div class="kv" id="kv-models"></div><table id="t-models"></table></div><div class="pane" data-p="disk"><div class="chw s"><span class="cl" data-i18n="读">读</span><span class="cv" id="cv-dr"></span><canvas id="ch-dr"></canvas></div><div class="chw s"><span class="cl" data-i18n="写">写</span><span class="cv" id="cv-dw"></span><canvas id="ch-dw"></canvas></div><table id="t-disk"></table></div><div class="pane" data-p="net"><div class="chw s"><span class="cl" id="cl-e0">eth</span><span class="cv" id="cv-e0"></span><canvas id="ch-e0"></canvas></div><div class="chw s" id="w-e1"><span class="cl">Wi‑Fi</span><span class="cv" id="cv-e1"></span><canvas id="ch-e1"></canvas></div><div class="chw s" id="w-ts"><span class="cl">Tailscale</span><span class="cv" id="cv-ts"></span><canvas id="ch-ts"></canvas></div><div class="kv" id="kv-net"></div><table id="t-net"></table></div><div class="pane" data-p="tail"><div class="chw"><span class="cv" id="cv-tail"></span><canvas id="ch-tail"></canvas></div><div class="kv" id="kv-tail"></div><table id="t-tail"></table></div><div class="pane" data-p="ping"><div class="chw"><span class="cv" id="cv-ping"></span><canvas id="ch-ping"></canvas></div><table id="t-ping"></table></div><div class="pane" data-p="alert"><div id="alerts"></div></div><div class="pane" data-p="self"><div class="chw"><span class="cv" id="cv-self"></span><canvas id="ch-self"></canvas></div><div id="selfp"></div></div></div></div></div>
+<script>
+"use strict";
+// syforce — OS force-directed graph. Single file, no build step, no dependencies.
+const $=id=>document.getElementById(id);
+const MB=1048576;
+function fB(b){b=b||0;if(b>=MB*1024)return (b/MB/1024).toFixed(1)+' GB/s';if(b>=MB)return (b/MB).toFixed(b>=100*MB?0:1)+' MB/s';if(b>=1024)return (b/1024).toFixed(0)+' KB/s';return Math.round(b)+' B/s'}
+function fS(b){b=b||0;if(b>=1e12)return (b/1e12).toFixed(2)+' TB';if(b>=1e9)return (b/1e9).toFixed(1)+' GB';if(b>=1e6)return (b/1e6).toFixed(0)+' MB';return (b/1e3).toFixed(0)+' KB'}
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function setHTML(el,h){if(el._h!==h){el._h=h;el.innerHTML=h}}
+const I=(n,c)=>`<svg class="ic${c?' '+c:''}"><use href="#i-${n}"/></svg>`;
+const LS='syforce';
+// ---------- i18n (terse labels only; zh is the source language) ----------
+const I18N={
+ en:{'内存':'Mem','网络':'Net','面板':'Panel','此刻':'Now','聚焦':'Focus','无':'none','流畅':'Smooth','节能':'Eco','实时':'Live','断开':'Offline',
+  '面板占用':'Panel','远端主机':'Remote hosts','磁盘':'Disk','延迟':'Latency','告警':'Alerts','网关':'Gateway',
+  '有线':'Wired','未连接':'not connected','路由':'Router','互联网':'Internet','核':'cores','负载':'load','在线':'online','离线':'offline','活跃':'active','读':'R','写':'W','显存':'VRAM',
+  '压力':'pressure','正常':'normal','警告':'warn','严重':'critical','后端':'Backend','子进程':'Helpers','本页':'This tab','本机':'Local','远程':'Remote','客户端进程':'Client',
+  '空闲':'Idle','交换':'Swap','进程':'Procs','内存压力':'Mem pressure','超时':'timeout','剩余':'free','已建立':'est','监听':'listen','直连':'direct','出口':'Exit','线程':'threads','模型':'Models','加载中':'Loading','异常':'Down','温度':'Temp','功耗':'Power','频率':'Clock','运行':'Run','排队':'Queue','时长':'Up','缓存':'Cache','演示':'demo'},
+ ja:{'内存':'メモリ','网络':'ネット','面板':'パネル','此刻':'いま','聚焦':'フォーカス','无':'なし','流畅':'なめらか','节能':'省電力','实时':'ライブ','断开':'切断',
+  '面板占用':'パネル','远端主机':'リモートホスト','磁盘':'ディスク','延迟':'遅延','告警':'アラート','网关':'ゲートウェイ',
+  '有线':'有線','未连接':'未接続','路由':'ルーター','互联网':'インターネット','核':'コア','负载':'負荷','在线':'オンライン','离线':'オフライン','活跃':'アクティブ','读':'読','写':'書','显存':'VRAM',
+  '压力':'圧迫','正常':'正常','警告':'警告','严重':'深刻','后端':'バックエンド','子进程':'子プロセス','本页':'このタブ','本机':'ローカル','远程':'リモート','客户端进程':'クライアント',
+  '空闲':'アイドル','交换':'スワップ','进程':'プロセス','内存压力':'メモリ圧迫','超时':'タイムアウト','剩余':'空き','已建立':'確立','监听':'待受','直连':'直接','出口':'出口','线程':'スレッド','模型':'モデル','加载中':'読込中','异常':'異常','温度':'温度','功耗':'電力','频率':'クロック','运行':'実行','排队':'待機','时长':'稼働','缓存':'キャッシュ','演示':'デモ'}};
+const KINDS={Performance:{zh:'性能核',ja:'高性能'},Efficiency:{zh:'能效核',ja:'高効率'},CPU:{zh:'核',ja:'コア'}};
+const kindName=k=>((KINDS[k]||{})[LANG])||k;
+const qlang=(location.search.match(/lang=(zh|en|ja)/)||[])[1];
+let CFG={};let LANG=qlang||localStorage.getItem(LS+'Lang')||'zh';if(!['zh','en','ja'].includes(LANG))LANG='zh';
+const T=s=>LANG==='zh'?s:((I18N[LANG]||{})[s]??s);
+// ---------- friendly process names (zh only) ----------
+const FRIENDLY=[
+ [/^VLLM::Engine/,'vLLM 推理引擎'],[/^VLLM::/,'vLLM 工作进程'],[/^vllm$/,'vLLM API'],[/^python3? server\.py/,'本面板'],
+ [/^dockerd$/,'Docker'],[/^containerd/,'容器运行时'],[/^docker-proxy$/,'Docker 端口转发'],[/^tailscaled$/,'Tailscale 服务'],[/^tailscale$/,'Tailscale'],
+ [/^Xorg$/,'图形服务'],[/^gnome-shell$/,'GNOME 桌面'],[/^sshd/,'SSH 服务'],[/^ssh$/,'SSH'],[/^systemd$/,'系统服务'],[/^systemd-/,'系统服务'],[/^kswapd/,'内存回收'],
+ [/^kernel_task$/,'内核'],[/^WindowServer$/,'窗口服务'],[/^mds/,'Spotlight 索引'],[/^svchost/,'系统服务'],
+ [/^nvidia-/,'NVIDIA 服务'],[/^snapd$/,'Snap'],[/^(kworker|ksoftirqd|irq)/,'内核线程'],[/^(chrome|chromium|firefox|msedge)/i,'浏览器'],[/^node$/,'Node.js'],[/^python3?(\.\d+)?$/,'Python'],
+ [/^(ss|ping|netstat)$/,'采样'],[/^(curl|wget)$/,'下载'],[/^(apt|apt-get|pip|brew)/,'安装'],[/^rsync$/,'同步'],[/^git$/,'Git']];
+const HELPER=[[/Helper \(Renderer\)/,'网页进程'],[/Helper \(GPU\)/,'图形进程'],[/Helper \(Plugin\)/,'插件进程'],[/Helper/,'辅助进程']];
+function friendly(name,app){if(LANG!=='zh')return '';name=name||'';for(const [re,v] of FRIENDLY)if(re.test(name))return v;
+ const a=app&&app!==name?app.replace(/^Google /,''):'';for(const [re,v] of HELPER)if(re.test(name))return (a||'浏览器')+' '+v;return a}
+const short=p=>friendly(p.name,p.app)||p.name;
+function pname(p,self){const f=friendly(p.name,p.app);return `<td class="nm">${I('app',self?'c-self':'')}${esc(f||p.name)}${f?'<small>'+esc(p.name)+'</small>':''}${self?I('gauge','c-self tr'):''}</td>`}
+// ---------- render modes (节能 eco / 流畅 smooth) ----------
+const MODES={smooth:{name:'流畅',fps:30,cap:1200,spawn:1,trail:true,glow:1},eco:{name:'节能',fps:20,cap:600,spawn:.5,trail:false,glow:.8}};
+const qmode=(location.search.match(/mode=(eco|smooth)/)||[])[1];
+let MODE=qmode||localStorage.getItem(LS+'Mode')||'eco';if(!MODES[MODE])MODE='eco';
+function capFor(){return Math.round(MODES[MODE].cap*((window.devicePixelRatio||1)>=2?.65:1))}
+let MAXP=capFor();
+function setMode(m,save){MODE=m;MAXP=capFor();if(save&&!qmode)localStorage.setItem(LS+'Mode',m);$('modeBtn').innerHTML=I(m==='eco'?'leaf':'zap')+'<span>'+T(MODES[m].name)+'</span>'}
+$('modeBtn').onclick=()=>setMode(MODE==='eco'?'smooth':'eco',true);
+function applyLang(){document.documentElement.lang={zh:'zh-CN',en:'en',ja:'ja'}[LANG];document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=T(e.dataset.i18n));
+ document.querySelectorAll('#langMenu button').forEach(b=>{const on=b.dataset.l===LANG;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});setMode(MODE);
+ for(const n of nodes.values())n._lk=null;setPopHead();updateFocusChip();if(S){$('alerts').innerHTML='';ALIST.forEach(a=>addAlert(a,false,true))}render()}
+function langMenu(open){const m=$('langMenu');m.hidden=!open;$('langBtn').setAttribute('aria-expanded',open)}
+$('langBtn').onclick=ev=>{ev.stopPropagation();langMenu($('langMenu').hidden)};
+$('langMenu').onclick=ev=>{const b=ev.target.closest('button[data-l]');if(!b)return;ev.stopPropagation();LANG=b.dataset.l;localStorage.setItem(LS+'Lang',LANG);langMenu(false);applyLang()};
+document.addEventListener('click',ev=>{if(!$('langMenu').hidden&&!ev.target.closest('#langWrap'))langMenu(false)});
+if(localStorage.getItem(LS+'Side')==='0')document.body.classList.add('noside');
+$('sideBtn').onclick=()=>{document.body.classList.toggle('noside');localStorage.setItem(LS+'Side',document.body.classList.contains('noside')?'0':'1');fit()};
+function toggleFS(){const d=document;if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d)}else{const e=d.documentElement;const f=e.requestFullscreen||e.webkitRequestFullscreen;if(f)f.call(e)}}
+$('fsBtn').onclick=toggleFS;
+function fsChange(){const on=!!(document.fullscreenElement||document.webkitFullscreenElement);$('fsBtn').innerHTML=I(on?'minimize':'maximize');setTimeout(fit,50)}
+document.addEventListener('fullscreenchange',fsChange);document.addEventListener('webkitfullscreenchange',fsChange);
+document.addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+ if(e.key==='f'||e.key==='F'){e.preventDefault();toggleFS()}else if(e.key==='Escape'){if(!$('langMenu').hidden)langMenu(false);else if(POP)closePop();else if(FOC)setFocus(null)}});
+// ---------- canvas & view (virtual coordinates VW x VH, scaled to the stage) ----------
+const C=$('cv'),ctx=C.getContext('2d'),STAGE=$('stage');
+let W=800,H=600,DPR=1,VW=1200,VH=820,SC=1,OX=0,OY=0;
+const FONT='-apple-system,"PingFang SC","Hiragino Sans GB","Hiragino Sans","Microsoft YaHei",sans-serif';
+const COL={lan:[62,224,255],inet:[91,140,255],tail:[179,107,255],exit:[255,204,51],disk:[255,157,59],gpu:[77,255,154],cpu:[255,92,168],mem:[255,224,102],me:[150,220,255],off:[90,100,130],ai:[180,255,60]};
+const rgba=(c,a)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const SPR={};
+function mkSprite(c){const s=64,o=document.createElement('canvas');o.width=o.height=s;const g=o.getContext('2d');const gr=g.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+ gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.18,rgba(c,1));gr.addColorStop(.45,rgba(c,.35));gr.addColorStop(1,rgba(c,0));g.fillStyle=gr;g.fillRect(0,0,s,s);return o}
+for(const k in COL){SPR[k+':in']=mkSprite(COL[k]);SPR[k+':out']=mkSprite(COL[k].map(v=>Math.round(v+(255-v)*.5)))}
+function fit(){document.documentElement.style.setProperty('--vh',window.innerHeight+'px');document.documentElement.style.setProperty('--toph',$('top').offsetHeight+'px');resize()}
+function resize(){const r=STAGE.getBoundingClientRect();const w=Math.max(1,Math.floor(r.width)),h=Math.max(1,Math.floor(r.height));DPR=window.devicePixelRatio||1;
+ const bw=Math.round(w*DPR),bh=Math.round(h*DPR);if(C.width!==bw||C.height!==bh){C.width=bw;C.height=bh}
+ C.style.width=w+'px';C.style.height=h+'px';W=w;H=h;
+ const legH=$('legend').offsetHeight+6,topR=34,pad=10,ah=h-legH-topR-pad;
+ VH=820;VW=Math.max(1050,Math.min(1500,VH*(w-2*pad)/Math.max(100,ah)));
+ SC=Math.min((w-2*pad)/VW,ah/VH);OX=(w-VW*SC)/2;OY=topR+(ah-VH*SC)/2;
+ MAXP=capFor();for(const n of nodes.values())n._lk=null;if(S)layout(S);wake(60)}
+new ResizeObserver(()=>resize()).observe(STAGE);
+new ResizeObserver(()=>{document.documentElement.style.setProperty('--toph',$('top').offsetHeight+'px')}).observe($('top'));
+window.addEventListener('resize',fit);
+(function watchDPR(){const mq=matchMedia(`(resolution: ${window.devicePixelRatio||1}dppx)`);const h=()=>{mq.removeEventListener('change',h);fit();watchDPR()};mq.addEventListener('change',h)})();
+// ---------- graph model ----------
+// layout() sets each node's ANCHOR (tx,ty): a structural hint. The force simulation (phys) moves the real x,y.
+const nodes=new Map(),edges=new Map();let particles=[];
+function node(key,o){let n=nodes.get(key);if(!n){const j=()=>(Math.random()-.5)*30;n={key,x:o.x+j(),y:o.y+j(),vx:0,vy:0,alpha:0,loadV:0,pulse:Math.random()*6,shock:0};nodes.set(key,n);wake(90)}
+ const ld=o.load||0,ax=o.x,ay=o.y;delete o.load;delete o.x;delete o.y;Object.assign(n,o);if(Math.abs((n.tx??ax)-ax)+Math.abs((n.ty??ay)-ay)>2)wake(40);n.tx=ax;n.ty=ay;n.loadT=ld;n.alive=true;return n}
+function edge(a,b,o){const key=a+'>'+b;let e=edges.get(key);if(!e){e={key,a,b,inV:0,outV:0,accIn:0,accOut:0,alpha:0,curv:((hash(key)%100)/100-.5)*.35};edges.set(key,e);wake(40)}
+ Object.assign(e,o);e.alive=true;return e}
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)}
+function inten(v,isLoad){if(isLoad)return Math.max(0,Math.min(1,v));if(v<200)return 0;return Math.min(1,Math.log10(1+v/1024)/Math.log10(1+100*MB/1024))}
+const rates=(rx,tx)=>`↓${fB(rx)} ↑${fB(tx)}`;
+let S=null;
+const HOPX=[[],[.70],[.665,.755],[.645,.705,.765]];
+function hopLabel(h,i){return h.name||(i===0?T('网关'):T('路由')+(i>1?' '+i:''))}
+function layout(s){
+ for(const n of nodes.values())n.alive=false;for(const e of edges.values())e.alive=false;
+ const small=SC<.62,F=s.features||{};
+ const cx=VW*.44,cy=VH*.47,cpu=s.cpu.total/100,gpu=(s.gpu.util||0)/100,mem=s.mem.pct/100,SELF=new Set((s.panel||{}).pids||[]);
+ node('me',{x:cx,y:cy,r:46,label:s.host||'',sub:`CPU ${s.cpu.total.toFixed(0)}%`,col:'me',load:Math.max(cpu,gpu,inten(s.net.rx+s.net.tx)),kind:'me',tip:`${s.platform||''} · ${s.cpu.n} ${T('核')}`});
+ node('cpu',{x:VW*.10,y:VH*.17,r:26,label:'CPU',sub:`${s.cpu.total.toFixed(0)}% · ${s.cpu.n} ${T('核')}`,col:'cpu',load:cpu,kind:'cpu',cores:s.cpu.per,tip:`CPU ${s.cpu.total}%`});
+ edge('me','cpu',{col:'cpu',inT:inten(cpu*1.3,1),outT:0,load:1});
+ if(F.gpu){node('gpu',{x:VW*.07,y:VH*.39,r:24,label:'GPU',sub:`${s.gpu.util??'-'}%${s.gpu.temp!=null?' · '+s.gpu.temp+'°C':''}`,col:'gpu',load:gpu,kind:'gpu',tip:`${s.gpu.name||'GPU'}${s.gpu.power!=null?' · '+s.gpu.power+' W':''}`});
+  edge('me','gpu',{col:'gpu',inT:inten(gpu*1.3,1),outT:0,load:1})}
+ const pr=T({1:'正常',2:'警告',4:'严重'}[s.mem.pressure]||'正常');
+ node('mem',{x:VW*.07,y:VH*(F.gpu?.61:.50),r:24,label:T('内存'),sub:`${s.mem.pct.toFixed(0)}%`,col:'mem',load:mem*.6+(s.mem.pressure>1?.4:0),kind:'mem',tip:`${fS(s.mem.used)} / ${fS(s.mem.total)} · ${pr}`});
+ edge('me','mem',{col:'mem',inT:mem*.25+(s.mem.pressure>1?.5:0),outT:0,load:1});
+ node('disk',{x:VW*.10,y:VH*.83,r:26,label:T('磁盘'),sub:`↓${fB(s.disk.r)} ↑${fB(s.disk.w)}`,col:'disk',load:inten(s.disk.r+s.disk.w)*1.1,kind:'disk',tip:`${T('读')} ${fB(s.disk.r)} · ${T('写')} ${fB(s.disk.w)}`});
+ edge('me','disk',{col:'disk',inT:s.disk.r,outT:s.disk.w});
+ const cp=(s.procs.cpu||[]).filter(p=>p.cpu>=3).slice(0,small?4:6);
+ cp.forEach((p,i)=>{const k='p:'+p.pid;const n=cp.length;node(k,{x:VW*(.19+(n>1?i*.24/(n-1):.12)),y:VH*(.07+(i%2)*.065),r:8+Math.min(14,p.cpu/8),label:short(p),pname:p.name,maxw:VW*.24/Math.max(1,n-1)*1.9,sub:p.cpu.toFixed(0)+'%',col:'cpu',load:Math.min(1,p.cpu/100),kind:'proc',small:1,self:SELF.has(p.pid),tip:`${p.name} · ${p.pid} · ${p.cpu.toFixed(0)}%`});
+  edge('me',k,{col:'cpu',inT:Math.min(1,p.cpu/100)*.9+.05,outT:0,load:1})});
+ const np=(s.net.procs||[]).filter(p=>p.rx+p.tx>2048).slice(0,small?3:5);
+ np.forEach((p,i)=>{const k='n:'+(p.pid||p.name);node(k,{x:VW*(.52+i*.065),y:VH*(.07+(i%2)*.065),r:8+inten(p.rx+p.tx)*14,label:short(p),pname:p.name,maxw:VW*.12,sub:rates(p.rx,p.tx),col:'inet',load:inten(p.rx+p.tx),kind:'proc',small:1,self:SELF.has(p.pid),tip:`${p.name}${p.pid?' · '+p.pid:''}`});
+  edge('me',k,{col:'inet',inT:p.rx,outT:p.tx})});
+ const nics=s.nics||[];
+ const e0=nics.find(x=>x.main)||{rx:0,tx:0,name:'eth'},e1=nics.find(x=>x.wifi&&!x.main),tu=nics.find(x=>x.tail)||{rx:0,tx:0,name:'tailscale0'};
+ const hosts=s.net.hosts||[],hops=((s.topo||{}).hops||[]).slice(0,3),hopIps=new Set(hops.map(h=>h.ip));let lanRx=0,lanTx=0;hosts.forEach(h=>{if(h.cls==='lan'&&!hopIps.has(h.ip)){lanRx+=h.rx;lanTx+=h.tx}});
+ const y0=VH*.47;
+ node('en0',{x:VW*.565,y:y0,r:17,maxw:VW*.088,label:e0.wifi?'Wi‑Fi':T('有线'),sub:rates(e0.rx,e0.tx),col:'lan',load:inten(e0.rx+e0.tx),kind:'nic',tip:`${e0.name} ${e0.ip||''}`});
+ edge('me','en0',{col:'lan',inT:e0.rx,outT:e0.tx});
+ if(e1){node('en1',{x:VW*.55,y:VH*.31,r:11,label:'Wi‑Fi',sub:e1.ip?rates(e1.rx,e1.tx):'',col:'lan',load:inten(e1.rx+e1.tx),kind:'nic',small:1,off:!e1.ip,tip:`${e1.name} ${e1.ip||''}`});
+  edge('me','en1',{col:'lan',inT:e1.rx,outT:e1.tx,dash:!e1.ip})}
+ const ip=(s.ping||[]).find(p=>p.role==='inet');
+ const wr=Math.max(0,e0.rx-lanRx),wt=Math.max(0,e0.tx-lanTx);let prev='en0';
+ hops.forEach((h,i)=>{const k='r'+i,lab=hopLabel(h,i);node(k,{x:VW*HOPX[hops.length][i],y:y0,r:i?16:18,maxw:VW*.088,label:lab,sub:h.ms!=null?`${h.ms.toFixed(1)} ms`:h.ip,col:'lan',load:inten(i?wr+wt:e0.rx+e0.tx),kind:'router',ip:h.ip,tip:`${lab} · ${h.ip}`});
+  edge(prev,k,{col:'lan',inT:i?wr:e0.rx,outT:i?wt:e0.tx});prev=k});
+ node('inet',{x:VW*.84,y:y0,r:22,maxw:VW*.088,label:T('互联网'),sub:ip&&ip.ms!=null?`${ip.ms.toFixed(0)} ms`:'',col:'inet',load:inten(wr+wt),kind:'inet',tip:rates(wr,wt)});
+ edge(prev,'inet',{col:'inet',inT:wr,outT:wt});
+ const LANP=hops.length?'r0':'en0';
+ const ih=hosts.filter(h=>h.cls==='internet').slice(0,small?5:9);
+ ih.forEach((h,i)=>{const k='h:'+h.ip;const nm=h.host&&h.host!=='-'?h.host.split('.').slice(-3).join('.'):h.ip;
+  node(k,{x:VW-78,y:VH*(.10+i*(.54/Math.max(1,ih.length-1))),r:6+inten(h.rx+h.tx)*10,label:nm,ip:h.ip,maxw:140,sub:rates(h.rx,h.tx),col:'inet',load:inten(h.rx+h.tx),kind:'host',small:1,tip:`${h.ip}${h.ports.length?' :'+h.ports.join(','):''}`});
+  edge('inet',k,{col:'inet',inT:h.rx,outT:h.tx})});
+ const lh=hosts.filter(h=>h.cls==='lan'&&!hopIps.has(h.ip)).slice(0,small?2:4);
+ lh.forEach((h,i)=>{const k='l:'+h.ip;node(k,{x:VW*(.625+i*.05),y:VH*(.585+(i%2)*.045),r:6+inten(h.rx+h.tx)*8,label:h.host||h.ip,ip:h.ip,maxw:VW*.09,sub:rates(h.rx,h.tx),col:'lan',load:inten(h.rx+h.tx),kind:'host',small:1,tip:`${h.ip}${h.ports.length?' :'+h.ports.join(','):''}`});
+  edge(LANP,k,{col:'lan',inT:h.rx,outT:h.tx})});
+ const lhSet=new Set(lh.map(h=>h.ip));
+ const MS=(s.models||[]);const tokI=v=>v<=.05?0:Math.min(1,.12+Math.log10(1+v)/Math.log10(1+1500)*.88);
+ MS.forEach((m,i)=>{const k='m:'+m.port,nm=(m.models||[])[0]||m.display||(':'+m.port),gi=tokI(m.gen_tps),pi=tokI(m.prompt_tps);
+  const st=m.status==='ok'?'':m.status==='loading'?T('加载中'):T('异常');
+  node(k,{x:VW*.205,y:VH*(MS.length>1?.29+i*(.26/(MS.length-1)):.39),r:15+gi*7,label:nm,maxw:VW*.13,sub:st||`${(m.gen_tps||0)<9.95?(m.gen_tps||0).toFixed(1):Math.round(m.gen_tps)} tok/s`,col:m.status==='ok'?'ai':m.status==='loading'?'exit':'cpu',load:Math.max(gi,(m.running||0)>0?.35:0),kind:'model',port:m.port,small:1,
+   tip:`${m.engine} :${m.port}${m.container?' · '+m.container:''}`});
+  edge(F.gpu?'gpu':'me',k,{col:'gpu',inT:0,outT:Math.max(gi,pi*.6),load:1});let local=false;const cl=(m.clients||[]);
+  cl.forEach(c=>{const sh=1/Math.max(1,cl.length),io={col:'ai',inT:tokI((m.gen_tps||0)*sh),outT:tokI((m.prompt_tps||0)*sh),load:1};const p=((s.tail||{}).peers||[]).find(x=>x.ip===c.ip);
+   if(p&&F.tail)edge('t:'+p.name,k,io);else if(c.cls==='lan'){if(!lhSet.has(c.ip)){lhSet.add(c.ip);const j=lhSet.size-1;node('l:'+c.ip,{x:VW*(.625+j*.05),y:VH*(.585+(j%2)*.045),r:6,label:c.ip,ip:c.ip,maxw:VW*.09,sub:'',col:'lan',load:0,kind:'host',small:1,tip:c.ip});edge(LANP,'l:'+c.ip,{col:'lan',inT:0,outT:0})}edge('l:'+c.ip,k,io)}
+   else if(c.cls==='internet'&&nodes.has('h:'+c.ip))edge('h:'+c.ip,k,io);else local=true});
+  if(local)edge('me',k,{col:'ai',inT:tokI(m.prompt_tps),outT:tokI(m.gen_tps),load:1})});
+ if(F.tail){const TS=s.tail||{};let peers=(TS.peers||[]).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  if(small)peers=peers.filter(p=>p.online||p.exit);
+  const tx0=VW*.56,ty0=VH*.71;
+  node('ts',{x:tx0,y:ty0,r:19,label:'Tailscale',sub:rates(tu.rx,tu.tx),col:'tail',load:inten(tu.rx+tu.tx),kind:'ts',tip:((TS.self||{}).ips||[])[0]||''});
+  edge('me','ts',{col:'tail',inT:tu.rx,outT:tu.tx});
+  const tf={};hosts.filter(h=>h.cls==='tailnet').forEach(h=>tf[h.ip]=h);
+  const N=peers.length,arcw=Math.PI*.83*VW*.36/Math.max(1,N-1);
+  peers.forEach((p,i)=>{const c0=Math.cos(14*Math.PI/180),a=N>1?Math.acos(c0-i*2*c0/(N-1)):Math.PI/2;const k='t:'+p.name;
+   const f=tf[p.ip];const rx=Math.max(p.rx,f?f.rx:0),tx=Math.max(p.tx,f?f.tx:0);const col=p.exit?'exit':(p.online?'tail':'off');
+   node(k,{x:tx0+Math.cos(a)*VW*.36,y:ty0+Math.sin(a)*VH*.175,r:p.online?(9+inten(rx+tx)*10):6,label:p.name,pname:p.name,ip:p.ip,maxw:Math.max(60,arcw*1.1),sub:p.online&&rx+tx>0?rates(rx,tx):'',col,load:p.online?inten(rx+tx)+(p.active?.1:0):0,kind:'peer',small:1,exit:p.exit,off:!p.online,tip:`${p.name} · ${p.ip}`});
+   edge('ts',k,{col,inT:rx,outT:tx,dash:!p.online});
+   if(p.exit)edge(k,'inet',{col:'exit',inT:rx,outT:tx,dash:true,soft:1})})}
+ for(const n of nodes.values())if(!n.alive)n.loadT=0;
+ for(const e of edges.values())if(!e.alive){e.inT=0;e.outT=0}
+ computeRel(s);
+}
+// ---------- force-directed physics ----------
+// Forces: pairwise repulsion (label-aware radius) + edge springs (traffic => stiffer, shorter) + soft anchor pull.
+// Integrated once per rendered frame with damping; sleeps when kinetic energy is low; capped node count.
+const STRUCT=new Set(['cpu','gpu','mem','disk','nic','router','inet','ts']);
+const PHY={awake:120,drag:null,justDragged:false,ke:0,steps:0};
+function wake(n){PHY.awake=Math.max(PHY.awake,n||60)}
+const anchorK=n=>n.kind==='me'?.25:STRUCT.has(n.kind)?.05:.022;
+const effR=n=>ringR(n)+(n.small?8:12);
+function phys(dt){
+ if(PHY.awake<=0&&!PHY.drag)return;PHY.awake--;PHY.steps++;
+ const s=Math.min(1.5,dt*30),arr=[];for(const n of nodes.values())if(n.alive||n.alpha>.05)arr.push(n);
+ const L=Math.min(arr.length,90),KC=.09;
+ for(let i=0;i<L;i++){const n=arr[i];const k=anchorK(n);n.fx=(n.tx-n.x)*k;n.fy=(n.ty-n.y)*k;n._er=effR(n)}
+ for(let i=0;i<L;i++){const a=arr[i];for(let j=i+1;j<L;j++){const b=arr[j];let dx=b.x-a.x,dy=b.y-a.y;
+  const wa=a.kind==='me'?.1:STRUCT.has(a.kind)?.5:1,wb=b.kind==='me'?.1:STRUCT.has(b.kind)?.5:1;
+  // 1) node repulsion: soft, linear and bounded (continuous => no jitter)
+  const mn=(a._er+b._er)*1.35,d2=dx*dx+dy*dy;
+  if(d2<mn*mn){if(d2<.01){dx=(hash(a.key)%7)-3||1;dy=(hash(b.key)%5)-2||1}const d=Math.max(.1,Math.sqrt(d2)),f=KC*(mn-d),ux=dx/d,uy=dy/d;a.fx-=ux*f*wa;a.fy-=uy*f*wa;b.fx+=ux*f*wb;b.fy+=uy*f*wb}
+  // 2) label boxes: separate overlapping labels along the cheaper axis
+  if(a._lw&&b._lw&&a.alpha>.5&&b.alpha>.5){const ha=a._lw/2,hb=b._lw/2,ya=a.y+labOff(a,false),yb=b.y+labOff(b,false);
+   const ox=Math.min(a.x+ha,b.x+hb)-Math.max(a.x-ha,b.x-hb),oy=Math.min(ya+a._lh,yb+b._lh)-Math.max(ya,yb);
+   if(ox>0&&oy>0){if(oy<ox){const sg=yb>=ya?1:-1,f=KC*.6*oy;a.fy-=sg*f*wa;b.fy+=sg*f*wb}else{const sg=b.x>=a.x?1:-1,f=KC*.6*ox;a.fx-=sg*f*wa;b.fx+=sg*f*wb}}}}}
+ // 3) springs: rest length shrinks and stiffness grows with live traffic on the link
+ for(const e of edges.values()){if(!e.alive)continue;const A=nodes.get(e.a),B=nodes.get(e.b);if(!A||!B||A._er===undefined||B._er===undefined)continue;
+  const I=Math.max(e.inV,e.outV),rest0=Math.hypot(A.tx-B.tx,A.ty-B.ty),rest=rest0*(1-.3*I),k=e.soft?.002:(.01+.04*I);
+  const dx=B.x-A.x,dy=B.y-A.y,d=Math.max(1,Math.hypot(dx,dy)),f=k*(d-rest),ux=dx/d,uy=dy/d;
+  const wa=A.kind==='me'?.1:STRUCT.has(A.kind)?.5:1,wb=B.kind==='me'?.1:STRUCT.has(B.kind)?.5:1;A.fx+=ux*f*wa;A.fy+=uy*f*wa;B.fx-=ux*f*wb;B.fy-=uy*f*wb}
+ // 4) integrate with damping; dragged node follows the pointer
+ let ke=0;const dg=PHY.drag&&PHY.drag.moved?PHY.drag.n:null;
+ for(let i=0;i<L;i++){const n=arr[i];if(n===dg){n.vx=n.vy=0;continue}
+  n.vx=(n.vx+n.fx*s)*.72;n.vy=(n.vy+n.fy*s)*.72;const sp=Math.hypot(n.vx,n.vy);if(sp>10){n.vx*=10/sp;n.vy*=10/sp}
+  n.x+=n.vx*s;n.y+=n.vy*s;const m=n.r+4;n.x=Math.max(m,Math.min(VW-m,n.x));n.y=Math.max(m,Math.min(VH-m,n.y));ke+=n.vx*n.vx+n.vy*n.vy}
+ for(let i=L;i<arr.length;i++){const n=arr[i];n.x+=(n.tx-n.x)*.15;n.y+=(n.ty-n.y)*.15}
+ PHY.ke=ke;if(ke>.01*L)PHY.awake=Math.max(PHY.awake,8)}
+// ---------- click-to-focus ----------
+let FOC=null,REL=null;
+function focusFromNode(n){if(n.kind==='model')return {id:'model:'+n.port,kind:'model',port:n.port,label:n.label};if(n.kind==='proc')return {id:'proc:'+n.pname,kind:'proc',name:n.pname,label:n.label};
+ if(n.kind==='host')return {id:'host:'+n.ip,kind:'host',ip:n.ip,label:n.label};
+ if(n.kind==='peer')return {id:'peer:'+n.pname,kind:'peer',name:n.pname,ip:n.ip,label:n.label};
+ return {id:'node:'+n.key,kind:'node',key:n.key,label:n.label||(S&&S.host)||''}}
+function relFor(s,F,R){const hosts=s.net.hosts||[],peers=(s.tail||{}).peers||[],N=k=>R.nodes.add(k);
+ const HK=((s.topo||{}).hops||[]).slice(0,3).map((h,i)=>'r'+i);
+ const P_INET=['me','en0',...HK,'inet'],P_LAN=['me','en0',HK[0]||'en0'],P_TS=['me','ts'];
+ const peerByIp={};peers.forEach(p=>peerByIp[p.ip]=p);const exitPeer=peers.find(p=>p.exit);
+ const addHost=h=>{R.ips.add(h.ip);if(h.cls==='internet'){P_INET.forEach(N);N('h:'+h.ip);if(exitPeer){N('ts');N('t:'+exitPeer.name)}}else if(h.cls==='lan'){P_LAN.forEach(N);N('l:'+h.ip)}
+  else if(h.cls==='tailnet'){P_TS.forEach(N);const p=peerByIp[h.ip];if(p){N('t:'+p.name);R.peers.add(p.name)}}};
+ const addProc=nm=>{R.names.add(nm);N('me');for(const [k,n] of nodes)if(n.kind==='proc'&&n.pname===nm)N(k)};
+ if(F.kind==='proc'){addProc(F.name);hosts.forEach(h=>{if(h.procs.includes(F.name))addHost(h)});
+  if((s.procs.cpu||[]).some(p=>p.name===F.name))N('cpu');if((s.disk.top||[]).some(p=>p.name===F.name))N('disk')}
+ else if(F.kind==='host'){const h=hosts.find(x=>x.ip===F.ip);R.ips.add(F.ip);N('h:'+F.ip);N('l:'+F.ip);if(h){addHost(h);h.procs.forEach(addProc)}}
+ else if(F.kind==='peer'){P_TS.forEach(N);N('t:'+F.name);R.peers.add(F.name);const p=peers.find(x=>x.name===F.name);
+  if(p){if(p.exit)N('inet');hosts.forEach(h=>{if(h.ip===p.ip){R.ips.add(h.ip);h.procs.forEach(addProc)}})}}
+ else if(F.kind==='node'){const k=F.key;N(k);N('me');
+  if(k==='en0'){P_INET.forEach(N);hosts.forEach(h=>{if(h.cls!=='tailnet')addHost(h)})}
+  else if(k==='r0'){P_LAN.forEach(N);hosts.forEach(h=>{if(h.cls==='lan')addHost(h)});P_INET.forEach(N)}
+  else if(/^r\d$/.test(k)){P_INET.forEach(N)}
+  else if(k==='inet'){P_INET.forEach(N);hosts.forEach(h=>{if(h.cls==='internet'){addHost(h);h.procs.forEach(addProc)}});if(exitPeer){N('ts');N('t:'+exitPeer.name)}}
+  else if(k==='ts'){P_TS.forEach(N);peers.forEach(p=>{N('t:'+p.name);R.peers.add(p.name)});hosts.forEach(h=>{if(h.cls==='tailnet'){R.ips.add(h.ip);h.procs.forEach(addProc)}})}
+  else if(k==='cpu'){(s.procs.cpu||[]).forEach(p=>addProc(p.name))}
+  else if(k==='disk'){(s.disk.top||[]).forEach(p=>addProc(p.name))}
+  else if(k==='gpu'){(s.models||[]).forEach(m=>{N('m:'+m.port);R.models.add(String(m.port))});((s.gpu||{}).procs||[]).forEach(p=>R.names.add(p.name))}
+  else if(k==='me'){for(const e of edges.values())if(e.a==='me')N(e.b)}}
+ else if(F.kind==='model'){const m=(s.models||[]).find(x=>x.port==F.port);N('m:'+F.port);N('gpu');N('me');R.models.add(String(F.port));
+  if(m){(s.procs.cpu||[]).forEach(p=>{if(p.ctr&&p.ctr===m.ctr_id)addProc(p.name)});((s.gpu||{}).procs||[]).forEach(p=>{if(p.ctr&&p.ctr===m.ctr_id)R.names.add(p.name)});
+   (m.clients||[]).forEach(c=>{const p=peerByIp[c.ip];if(p){P_TS.forEach(N);N('t:'+p.name);R.peers.add(p.name)}else if(c.cls==='lan'){P_LAN.forEach(N);N('l:'+c.ip)}R.ips.add(c.ip)})}}
+ else if(F.kind==='edge'){N(F.a);N(F.b);const nb=nodes.get(F.b);if(nb)relFor(s,focusFromNode(nb),R);R.only=F.key}}
+function computeRel(s){if(!FOC||!s){REL=null;return}
+ const R={nodes:new Set(),edges:new Set(),names:new Set(),ips:new Set(),peers:new Set(),models:new Set()};relFor(s,FOC,R);
+ for(const [k,e] of edges)if(R.nodes.has(e.a)&&R.nodes.has(e.b))R.edges.add(k);
+ if(FOC.kind==='edge')R.edges.add(FOC.key);REL=R}
+function updateFocusChip(){const c=$('focusChip');if(!FOC){c.style.display='none'}else{c.style.display='block';c.textContent=`${T('聚焦')} ${FOC.label} ×`}if(POP&&!POPXY)placePop()}
+function setFocus(F){FOC=F;computeRel(S);applyFocusDom();updateFocusChip()}
+function toggleFocus(F){setFocus(F&&FOC&&FOC.id===F.id?null:F)}
+$('focusChip').onclick=()=>setFocus(null);
+function applyFocusDom(){document.querySelectorAll('#hosts .hr[data-fk], #pop tr[data-fk]').forEach(tr=>{tr.classList.remove('fdim','fhl','fsel');if(!REL)return;
+ const fk=tr.dataset.fk,v=tr.dataset.v;const id=fk+':'+v;const rel=fk==='proc'?REL.names.has(v):fk==='host'?REL.ips.has(v):fk==='model'?REL.models.has(v):REL.peers.has(v);
+ tr.classList.add(FOC&&FOC.id===id?'fsel':rel?'fhl':'fdim')})}
+function rowClick(ev){const tr=ev.target.closest('[data-fk]');if(!tr)return;const fk=tr.dataset.fk,v=tr.dataset.v,label=tr.dataset.l||v;
+ toggleFocus(fk==='model'?{id:'model:'+v,kind:'model',port:+v,label}:fk==='proc'?{id:'proc:'+v,kind:'proc',name:v,label}:fk==='host'?{id:'host:'+v,kind:'host',ip:v,label}:{id:'peer:'+v,kind:'peer',name:v,label})}
+$('side').addEventListener('click',rowClick);$('pop').addEventListener('click',rowClick);
+function hitNode(vx,vy){let best=null;for(const n of nodes.values()){if(!n.alive)continue;const d=Math.hypot(n.x-vx,n.y-vy);if(d<n.r+8/SC&&(!best||d<best.d))best={n,d}}return best&&best.n}
+function hitEdge(vx,vy){const tol=6/SC;let best=null;for(const e of edges.values()){if(!e.alive||!e.A||!e.B)continue;
+ for(let t=.06;t<.95;t+=.06){const q=bez(e,t,e.A,e.B),d=Math.hypot(q[0]-vx,q[1]-vy);if(d<tol&&(!best||d<best.d))best={e,d}}}return best&&best.e}
+function toV(ev){const r=C.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top;return [x,y,(x-OX)/SC,(y-OY)/SC]}
+// drag: pointerdown on a node grabs it; >4px movement = drag (node follows, springs back on release); else it is a click
+C.addEventListener('pointerdown',ev=>{const [x,y,vx,vy]=toV(ev);const n=hitNode(vx,vy);if(!n)return;PHY.drag={n,x,y,ox:vx-n.x,oy:vy-n.y,moved:false};C.setPointerCapture(ev.pointerId)});
+C.addEventListener('pointermove',ev=>{const [x,y,vx,vy]=toV(ev);const d=PHY.drag;
+ if(d){if(!d.moved&&Math.hypot(x-d.x,y-d.y)>4){d.moved=true;C.classList.add('grab');placeTip(null)}if(d.moved){d.n.x=vx-d.ox;d.n.y=vy-d.oy;wake(30)}return}
+ const n=hitNode(vx,vy);C.style.cursor=n?'grab':(hitEdge(vx,vy)?'pointer':'default');if(n!==TIPN||!n)placeTip(n)});
+const endDrag=()=>{const d=PHY.drag;if(d&&d.moved){PHY.justDragged=true;wake(120)}PHY.drag=null;C.classList.remove('grab')};
+C.addEventListener('pointerup',endDrag);C.addEventListener('pointercancel',endDrag);
+C.addEventListener('click',ev=>{if(PHY.justDragged){PHY.justDragged=false;ev._kp=true;return}const [,,vx,vy]=toV(ev);const n=hitNode(vx,vy);
+ if(n){toggleFocus(focusFromNode(n));const pk={cpu:'cpu',mem:'mem',gpu:'gpu',disk:'disk',model:'models'}[n.kind];if(pk){ev._kp=true;if(FOC){if(POP!==pk)openPop(pk)}else if(POP===pk)closePop()}return}
+ const e=hitEdge(vx,vy);if(e){const A=nodes.get(e.a),B=nodes.get(e.b);toggleFocus({id:'edge:'+e.key,kind:'edge',key:e.key,a:e.a,b:e.b,label:`${A?A.label||S.host:e.a} → ${B?B.label:e.b}`});return}
+ setFocus(null)});
+C.addEventListener('mouseleave',()=>placeTip(null));
+let TIPN=null;
+const isFoc=n=>!!(FOC&&FOC.kind!=='edge'&&focusFromNode(n).id===FOC.id);
+function nodeBox(n,foc){const sx=OX+n.x*SC,sy=OY+n.y*SC,rr=ringR(n)*SC,b=[sx-rr,sy-rr,sx+rr,sy+rr];
+ if(n._li&&n.alpha>=.5){const lo=labOff(n,foc)*SC,hw=n._lw*SC/2+(foc?5:0);b[0]=Math.min(b[0],sx-hw);b[2]=Math.max(b[2],sx+hw);b[3]=Math.max(b[3],sy+lo+n._lh*SC+(foc?2:0))}return b}
+function ovl(a,b){const w=Math.min(a[2],b[2])-Math.max(a[0],b[0]),h=Math.min(a[3],b[3])-Math.max(a[1],b[1]);return w>0&&h>0?w*h:0}
+function domBox(id){const e=$(id);if(!e||e.offsetParent===null)return null;return [e.offsetLeft,e.offsetTop,e.offsetLeft+e.offsetWidth,e.offsetTop+e.offsetHeight]}
+// tooltip placement: 6 candidates around the node; pick the one overlapping the fewest node/label boxes and overlays
+function placeTip(n){const tip=$('tip');if(!n||!n.tip||!n.alive){tip.style.display='none';TIPN=null;return}
+ TIPN=n;if(tip.textContent!==n.tip)tip.textContent=n.tip;tip.style.display='block';
+ const tw=tip.offsetWidth,th=tip.offsetHeight,G=8,b=nodeBox(n,isFoc(n)),sx=OX+n.x*SC,sy=OY+n.y*SC,rr=ringR(n)*SC;
+ const others=[];for(const m of nodes.values())if(m!==n&&m.alive&&m.alpha>.5)others.push(nodeBox(m,isFoc(m)));
+ for(const id of ['now','focusChip']){const d=domBox(id);if(d)others.push(d)}
+ const C6=[[sx-tw/2,b[1]-G-th],[b[2]+G,sy-th/2],[b[0]-G-tw,sy-th/2],[sx+rr*.7+G,b[1]-G-th],[sx-rr*.7-G-tw,b[1]-G-th],[sx-tw/2,b[3]+G]];
+ let best=null;for(const [x,y] of C6){const r=[x,y,x+tw,y+th];let s=0;
+  if(x<4||y<4||x+tw>W-4||y+th>H-4)s+=1e7;s+=ovl(r,b)*1e3;for(const o of others)s+=ovl(r,o);if(!best||s<best.s)best={s,x,y};if(s===0)break}
+ tip.style.left=Math.round(Math.max(4,Math.min(W-tw-4,best.x)))+'px';tip.style.top=Math.round(Math.max(4,Math.min(H-th-4,best.y)))+'px'}
+// ---------- label cache (pre-rendered offscreen canvases) ----------
+const MC=document.createElement('canvas').getContext('2d');
+function fitT(g,t,maxw){t=String(t||'');if(g.measureText(t).width<=maxw)return t;let lo=0,hi=t.length;while(lo<hi){const m=(lo+hi+1)>>1;if(g.measureText(t.slice(0,m)+'…').width<=maxw)lo=m;else hi=m-1}return t.slice(0,lo)+'…'}
+function labelImg(n){const k=SC*DPR,me=n.kind==='me';const lab=me?'':n.label;const key=lab+'|'+(n.sub||'')+'|'+k.toFixed(3)+'|'+(n.off?1:0)+(n.exit?1:0)+'|'+(n.maxw|0);
+ if(n._lk===key)return n._li;
+ const f1=Math.max(n.small?11:13,9.5/SC),f2=Math.max(10.5,9/SC),maxw=Math.max(40,n.maxw||170);
+ const F1=`${n.small?'':'bold '}${f1}px ${FONT}`,F2=`${f2}px ${FONT}`;
+ MC.font=F1;const l=lab?fitT(MC,lab,maxw):'',w1=l?MC.measureText(l).width:0;MC.font=F2;
+ const sb=n.sub?fitT(MC,n.sub,maxw):'',w2=sb?MC.measureText(sb).width:0;
+ const lw=Math.ceil(Math.max(w1,w2)+4),lh=Math.ceil((l?f1+3:0)+(sb?f2+3:0)+2);
+ const c=n._li||document.createElement('canvas');c.width=Math.max(1,Math.ceil(lw*k));c.height=Math.max(1,Math.ceil(lh*k));const x=c.getContext('2d');x.setTransform(k,0,0,k,0,0);x.textAlign='center';x.textBaseline='top';x.shadowColor='rgba(0,0,0,.85)';x.shadowBlur=2*k;
+ let y=1;if(l){x.font=F1;x.fillStyle=n.off?'#56607e':(n.exit?'#ffdd66':(n.self?'#ffe066':'#d6def5'));x.fillText(l,lw/2,y);y+=f1+3}
+ x.font=F2;if(sb){x.fillStyle=n.off?'#46506b':'#8a97bb';x.fillText(sb,lw/2,y)}
+ n._li=c;n._lk=key;n._lw=lw;n._lh=lh;return c}
+// ---------- animation ----------
+let lastDraw=0,frameMsAvg=50,workAvg=2;
+function bez(e,t,A,B){const mx=(A.x+B.x)/2,my=(A.y+B.y)/2,dx=B.x-A.x,dy=B.y-A.y,qx=mx-dy*e.curv,qy=my+dx*e.curv,u=1-t;return [u*u*A.x+2*u*t*qx+t*t*B.x,u*u*A.y+2*u*t*qy+t*t*B.y]}
+function loop(now){requestAnimationFrame(loop);if(document.hidden)return;const iv=1000/MODES[MODE].fps;if(now-lastDraw<iv-3)return;
+ const el=lastDraw?now-lastDraw:iv;lastDraw=now;frameMsAvg=frameMsAvg*.9+el*.1;const t0=performance.now();draw(Math.min(.15,el/1000));const wk=performance.now()-t0;workAvg=workAvg*.9+wk*.1;PF.frames++;PF.js+=wk;
+ if(workAvg>12&&MAXP>200)MAXP-=10;else if(workAvg<6&&MAXP<capFor())MAXP+=5}
+const DIM=.22;
+function draw(dt){const M=MODES[MODE],R=REL;
+ const fN=k=>!R||R.nodes.has(k)?1:DIM,fE=k=>!R||R.edges.has(k)?1:DIM;
+ phys(dt);
+ ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,C.width,C.height);
+ ctx.setTransform(DPR*SC,0,0,DPR*SC,DPR*OX,DPR*OY);
+ for(const [k,n] of nodes){n.alpha+=((n.alive?1:0)-n.alpha)*(n.alive?.12:.3);n.loadV+=(n.loadT-n.loadV)*.15;n.pulse+=dt*(1.2+n.loadV*6);if(n.shock>0)n.shock-=dt;
+  if(!n.alive&&n.alpha<.02&&k!=='me'){nodes.delete(k);for(const [ek,e] of edges)if(e.a===k||e.b===k)edges.delete(ek)}}
+ ctx.globalCompositeOperation='source-over';
+ const spawnScale=Math.min(1,(MAXP-particles.length)/(MAXP*.3)+.05)*M.spawn;
+ for(const [k,e] of edges){const A=nodes.get(e.a),B=nodes.get(e.b);if(!A||!B){edges.delete(k);continue}
+  const iT=e.load?e.inT:inten(e.inT),oT=e.load?e.outT:inten(e.outT);e.inV+=(iT-e.inV)*.12;e.outV+=(oT-e.outV)*.12;e.alpha+=((e.alive?1:0)-e.alpha)*.12;
+  e.A=A;e.B=B;const I=Math.max(e.inV,e.outV),c=COL[e.col]||COL.inet,f=fE(k),al=Math.min(A.alpha,B.alpha)*e.alpha*f,hl=R&&f===1;
+  ctx.strokeStyle=rgba(c,((hl?.35:.10)+I*.45)*al);ctx.lineWidth=1+I*5+(hl?1.5:0);ctx.setLineDash(e.dash?[4,6]:[]);
+  const mx=(A.x+B.x)/2,my=(A.y+B.y)/2,dx=B.x-A.x,dy=B.y-A.y;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.quadraticCurveTo(mx-dy*e.curv,my+dx*e.curv,B.x,B.y);ctx.stroke();
+  const len=Math.max(80,Math.hypot(dx,dy)),sp=spawnScale*(f<1?.25:1);
+  for(const dir of [1,-1]){const v=dir>0?e.outV:e.inV;if(v<.015)continue;const rate=(0.6+60*Math.pow(v,1.5))*sp;
+   let acc=(dir>0?e.accOut:e.accIn)+rate*dt;
+   while(acc>=1&&particles.length<MAXP){acc-=1;particles.push({e,t:dir>0?0:1,dir,sp:(.18+1.1*v)*(.8+Math.random()*.4)*(260/len),sz:3+v*7*(.7+Math.random()*.6),spr:SPR[e.col+(dir>0?':out':':in')],j:(Math.random()-.5)*4})}
+   if(acc>=1)acc=0;if(dir>0)e.accOut=acc;else e.accIn=acc}}
+ ctx.setLineDash([]);
+ ctx.globalCompositeOperation='lighter';
+ const keep=[];for(const p of particles){p.t+=p.dir*p.sp*dt;const e=p.e;if(p.t<0||p.t>1||!edges.has(e.key)||!e.A)continue;
+  const q=bez(e,p.t,e.A,e.B),fade=Math.min(1,Math.min(p.t,1-p.t)*8)*Math.min(1,e.alpha)*fE(e.key);ctx.globalAlpha=fade;const s=p.sz;ctx.drawImage(p.spr,q[0]-s+p.j,q[1]-s+p.j,s*2,s*2);
+  if(M.trail&&fade>.3){const q2=bez(e,p.t-p.dir*.025,e.A,e.B);ctx.globalAlpha=fade*.45;ctx.drawImage(p.spr,q2[0]-s*.6+p.j,q2[1]-s*.6+p.j,s*1.2,s*1.2)}keep.push(p)}
+ particles=keep;
+ for(const n of nodes.values()){const L=n.loadV,pl=.5+.5*Math.sin(n.pulse),f=fN(n.key);
+  const gr=n.r*(1.6+L*(1.6+.6*M.glow)+pl*L*.6*M.glow);ctx.globalAlpha=n.alpha*f*(n.off?.15:(.25+L*.6+pl*.15*L));ctx.drawImage(SPR[n.col+':in'],n.x-gr,n.y-gr,gr*2,gr*2);
+  if(n.shock>0){ctx.globalAlpha=n.shock/1.5;ctx.strokeStyle=rgba(n.shockCol||[255,77,109],1);ctx.lineWidth=3;ctx.beginPath();ctx.arc(n.x,n.y,n.r+(1.5-n.shock)*90,0,7);ctx.stroke()}}
+ ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+ const fid=FOC&&FOC.kind!=='edge'?FOC.id:null;
+ for(const n of nodes.values()){const c=COL[n.col]||COL.inet,f=fN(n.key);ctx.globalAlpha=n.alpha*(n.off?.5:1)*f;
+  ctx.fillStyle='#070b18';ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,7);ctx.fill();
+  ctx.strokeStyle=rgba(c,.5+n.loadV*.5);ctx.lineWidth=n.kind==='me'?3:(n.exit?3:1.6);ctx.stroke();
+  if(n.exit){ctx.strokeStyle=rgba(COL.exit,.6+.4*Math.sin(n.pulse*2));ctx.beginPath();ctx.arc(n.x,n.y,n.r+5,0,7);ctx.stroke()}
+  const foc=fid&&focusFromNode(n).id===fid;if(foc){ctx.strokeStyle='rgba(255,221,102,.95)';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.beginPath();ctx.arc(n.x,n.y,ringR(n),0,7);ctx.stroke();ctx.setLineDash([])}
+  if(n.loadV>.01&&!n.off){ctx.strokeStyle=rgba(c,.95);ctx.lineWidth=3;ctx.beginPath();ctx.arc(n.x,n.y,n.r-3.5,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,n.loadV));ctx.stroke()}
+  if(n.cores){const N=n.cores.length;for(let i=0;i<N;i++){const a0=-Math.PI/2+i*2*Math.PI/N,v=n.cores[i]/100;ctx.strokeStyle=rgba(c,.15+v*.85);ctx.lineWidth=2+v*5;ctx.beginPath();ctx.arc(n.x,n.y,n.r+7+v*3,a0+.04,a0+2*Math.PI/N-.04);ctx.stroke()}}
+  if(n.kind==='me'){ctx.fillStyle='#e8f4ff';let fs=22;for(;fs>12;fs-=2){ctx.font=`bold ${fs}px ${FONT}`;if(ctx.measureText(n.label).width<=n.r*1.8)break}ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(fitT(ctx,n.label,n.r*1.85),n.x,n.y+1)}
+  if(!n.alive||n.alpha<.5)continue;if(foc){FL.push(n);continue}const li=labelImg(n);ctx.drawImage(li,n.x-n._lw/2,n.y+labOff(n,false),n._lw,n._lh)}
+ ctx.globalAlpha=1;
+ for(const n of FL){const li=labelImg(n),lx=n.x-n._lw/2,ly=n.y+labOff(n,true);ctx.fillStyle='rgba(4,7,16,.8)';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(lx-5,ly-2,n._lw+10,n._lh+3,5);else ctx.rect(lx-5,ly-2,n._lw+10,n._lh+3);ctx.fill();ctx.drawImage(li,lx,ly,n._lw,n._lh)}
+ FL.length=0;if(TIPN&&++tipTick%6===0)placeTip(TIPN)}
+const FL=[];let tipTick=0;
+const ringR=n=>n.r+(n.cores?16:8),labOff=(n,foc)=>foc?ringR(n)+5:n.r+(n.cores?12:3);
+setInterval(()=>{if(document.hidden)return;$('perf').textContent=`${(1000/frameMsAvg).toFixed(0)} fps · ${workAvg.toFixed(1)} ms · ${particles.length}/${MAXP}${PHY.awake>0?' · ⚛':''}`},1000);
+// ---------- history / popovers ----------
+const HL=300;const hist={tok:[],gt:[],gw:[],cpu:[],mem:[],gpu:[],dr:[],dw:[],e0r:[],e0t:[],e1r:[],e1t:[],tr:[],tt:[],self:[]};const PH={};
+function push(k,v){const a=hist[k];a.push(v);if(a.length>HL)a.shift()}
+function pct2col(v){return v>85?'#ff4d6d':v>60?'#ff9d3b':v>25?'#ffcc33':'#4dff9a'}
+function pushHist(s){const N=s.nics||[],mn=N.find(x=>x.main)||{rx:0,tx:0},wn=N.find(x=>x.wifi&&!x.main)||{rx:0,tx:0},tu=N.find(x=>x.tail)||{rx:0,tx:0};
+ push('tok',s.tok||0);push('gt',s.gpu.temp||0);push('gw',s.gpu.power||0);
+ push('cpu',s.cpu.total);push('mem',s.mem.pct);push('gpu',s.gpu.util||0);push('dr',s.disk.r);push('dw',s.disk.w);push('e0r',mn.rx);push('e0t',mn.tx);push('e1r',wn.rx);push('e1t',wn.tx);push('tr',tu.rx);push('tt',tu.tx);push('self',((s.panel||{}).backend||{}).cpu||0);
+ (s.ping||[]).forEach(p=>{const a=PH[p.ip]||(PH[p.ip]=[]);a.push(p.ms==null?null:p.ms);if(a.length>HL)a.shift()})}
+const fkp=p=>`data-fk="proc" data-v="${esc(p.name)}" data-l="${esc(short(p))}"`;
+const PANES={cpu:['cpu','CPU'],mem:['mem','内存'],gpu:['gpu','GPU'],models:['sparkles','模型'],disk:['drive','磁盘'],net:['updown','网络'],tail:['network','Tailnet'],ping:['timer','延迟'],alert:['bell','告警'],self:['gauge','面板占用']};
+let POP=null,POPXY=null;
+function fC(b){b=Math.max(0,b||0);const U=['B','K','M','G'];let i=0;while(b>=999.5&&i<3){b/=1024;i++}return (i>0&&b<9.95?b.toFixed(1):String(Math.round(b)))+U[i]}
+const fMs=ms=>ms==null?'×':ms>=999.5?(ms/1000).toFixed(1)+'s':Math.round(ms)+'ms',fP1=v=>v==null?'–':(v<9.95?v.toFixed(1):String(Math.round(Math.min(v,999))))+'%';
+function setPopHead(){if(!POP)return;const P=PANES[POP];$('popI').innerHTML=I(P[0]);$('popT').textContent=T(P[1])}
+function openPop(k){if(POP===k){closePop();return}POP=k;POPXY=null;document.querySelectorAll('.rb').forEach(b=>b.classList.toggle('on',b.dataset.p===k));
+ document.querySelectorAll('.pane').forEach(e=>e.classList.toggle('on',e.dataset.p===k));setPopHead();$('popV').textContent='';$('pop').hidden=false;$('pop').querySelector('.pb').scrollTop=0;
+ if(S){updPane(S);if(k==='self')selfPanel(S);applyFocusDom()}placePop()}
+function closePop(){POP=null;POPXY=null;$('pop').hidden=true;document.querySelectorAll('.rb').forEach(b=>b.classList.remove('on'))}
+// popover sits under its icon, pushed below the "now"/focus chips, clamped to the viewport; draggable by its header
+function placePop(){if(!POP)return;const p=$('pop'),pw=p.offsetWidth,vw=innerWidth,vh=innerHeight;let x,y;
+ if(POPXY){[x,y]=POPXY}else{const b=document.querySelector(`.rb[data-p="${POP}"]`);const r=b.getBoundingClientRect();x=r.left-4;y=r.bottom+6;
+  for(const id of ['now','focusChip']){const e=$(id);if(!e||e.offsetParent===null||getComputedStyle(e).display==='none')continue;const er=e.getBoundingClientRect();if(er.right>x&&er.left<x+pw)y=Math.max(y,er.bottom+6)}}
+ x=Math.max(8,Math.min(vw-pw-8,x));y=Math.max(8,Math.min(vh-120,y));p.style.left=x+'px';p.style.top=y+'px';p.style.maxHeight=Math.max(160,vh-y-10)+'px'}
+$('rbar').addEventListener('click',ev=>{const b=ev.target.closest('.rb');if(b)openPop(b.dataset.p)});
+$('popX').onclick=closePop;$('exitBtn').onclick=()=>openPop('tail');
+(()=>{const H=$('popH');let d=null;H.addEventListener('pointerdown',ev=>{if(ev.target.closest('.px'))return;const r=$('pop').getBoundingClientRect();d=[ev.clientX-r.left,ev.clientY-r.top];H.setPointerCapture(ev.pointerId);H.classList.add('drag')});
+ H.addEventListener('pointermove',ev=>{if(!d)return;POPXY=[ev.clientX-d[0],ev.clientY-d[1]];placePop()});
+ const up=()=>{d=null;H.classList.remove('drag')};H.addEventListener('pointerup',up);H.addEventListener('pointercancel',up)})();
+document.addEventListener('click',ev=>{if(POP&&!ev._kp&&!ev.target.closest('#pop,#rbar,#langWrap,#exitBtn'))closePop()});
+window.addEventListener('resize',()=>placePop());
+let HSORT=localStorage.getItem(LS+'HostSort')||'t';if(!['t','rx','tx'].includes(HSORT))HSORT='t';
+function markSort(){document.querySelectorAll('#hsort button').forEach(b=>b.classList.toggle('on',b.dataset.s===HSORT))}markSort();
+$('hsort').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;HSORT=b.dataset.s;localStorage.setItem(LS+'HostSort',HSORT);markSort();if(S){updSide(S);applyFocusDom()}};
+function chart(id,series,minMax,fmt){const cv=$('ch-'+id);if(!cv)return;const cw=cv.clientWidth,ch=cv.clientHeight;if(!cw)return;const D=window.devicePixelRatio||1,bw=Math.round(cw*D),bh=Math.round(ch*D);
+ if(cv.width!==bw||cv.height!==bh){cv.width=bw;cv.height=bh}const g=cv.getContext('2d');g.clearRect(0,0,bw,bh);
+ let mx=minMax;for(const [a] of series)for(const v of a)if(v!=null&&v>mx)mx=v;if(minMax<100||mx>minMax)mx*=1.12;
+ g.strokeStyle='rgba(120,140,200,.10)';g.lineWidth=1;for(let i=1;i<4;i++){const y=Math.round(bh*i/4)+.5;g.beginPath();g.moveTo(0,y);g.lineTo(bw,y);g.stroke()}
+ const top=18*D,hh=bh-top-3*D;
+ for(const [a,col,fill] of series){if(!a.length)continue;const X=i=>bw-(a.length-1-i)*(bw/(HL-1)),Y=v=>bh-2*D-(v/mx)*hh;g.beginPath();let st=false;
+  a.forEach((v,i)=>{if(v==null){st=false;return}const x=X(i),y=Y(v);if(!st){g.moveTo(x,y);st=true}else g.lineTo(x,y)});
+  g.strokeStyle=rgba(col,fill?1:.85);g.lineWidth=1.5*D;g.stroke();
+  if(fill){g.lineTo(bw,bh);g.lineTo(X(0),bh);g.closePath();const gr=g.createLinearGradient(0,top,0,bh);gr.addColorStop(0,rgba(col,.30));gr.addColorStop(1,rgba(col,.02));g.fillStyle=gr;g.fill()}}
+ if(fmt){g.fillStyle='#4a5578';g.font=`${10*D}px ${FONT}`;g.textAlign='left';g.textBaseline='top';const hasL=cv.parentNode.querySelector('.cl');g.fillText(fmt(mx),6*D,hasL?19*D:5*D)}}
+const WHITE=[235,240,255];
+function sidebar(s){updBar(s);if(!document.body.classList.contains('noside'))updSide(s);if(POP)updPane(s);applyFocusDom()}
+function features(s){const F=s.features||{};
+ document.querySelectorAll('.rb[data-p=gpu]').forEach(b=>b.hidden=!F.gpu);document.querySelectorAll('.rb[data-p=models]').forEach(b=>b.hidden=!F.models);
+ document.querySelectorAll('.rb[data-p=tail]').forEach(b=>b.hidden=!F.tail);$('exitBtn').hidden=!F.tail;
+ document.querySelectorAll('#legend [data-f]').forEach(e=>e.hidden=!F[e.dataset.f]);$('w-e1').hidden=!F.wifi;$('w-ts').hidden=!F.tail;
+ const ttl=CFG.title||s.title||'syforce';if($('ttl').textContent!==ttl){$('ttl').textContent=ttl;document.title=ttl+(s.host?' · '+s.host:'')}
+}
+function updBar(s){const TS=s.tail||{};features(s);
+ const cpu=s.cpu.total,gp=s.gpu.util||0,rv=(k,t,c)=>{const e=$('rv-'+k);if(e.textContent!==t)e.textContent=t;e.className='rv'+(c?' '+c:'')};
+ const hot=v=>v>85?'crit':v>60?'hot':'';
+ rv('cpu',Math.round(cpu)+'%',hot(cpu));rv('mem',Math.round(s.mem.pct)+'%',s.mem.pressure>=4?'crit':s.mem.pressure>1?'hot':'');rv('gpu',Math.round(gp)+'%',hot(gp));
+ const tk=s.tok||0,MS=s.models||[];rv('models',tk>0.05?(tk>=999.5?(tk/1000).toFixed(1)+'k':tk<9.95?tk.toFixed(1):String(Math.round(tk))):String(MS.filter(m=>m.status==='ok').length),MS.some(m=>m.status==='down')?'crit':MS.some(m=>m.status==='loading')?'hot':'');
+ rv('disk',fC(s.disk.r+s.disk.w));rv('net',fC(s.net.rx+s.net.tx));
+ const pe=TS.peers||[];rv('tail',pe.length?`${pe.filter(p=>p.online).length}`:'');
+ const ip=(s.ping||[]).find(p=>p.role==='inet')||(s.ping||[])[0];rv('ping',ip?fMs(ip.ms):'',ip&&(ip.ms==null||ip.ms>150)?'crit':ip&&ip.ms>60?'hot':'');
+ const na=ALIST.filter(a=>a.ts&&a.ts>Date.now()/1000-600).length;rv('alert',na?(na>9?'9+':String(na)):'',na?'bd':'');
+ {const ex=TS.exit_node||'',eb=$('exitBtn');if($('exitN').textContent!==ex)$('exitN').textContent=ex;eb.classList.toggle('on',!!ex)}$('clock').textContent=s.time.slice(11);$('nowtxt').textContent=summary(s);selfPanel(s)}
+const HCLS={lan:['house','c-lan',COL.lan],internet:['globe','c-inet',COL.inet],tailnet:['network','c-ts',COL.tail]};
+function updSide(s){const key=HSORT==='rx'?h=>h.rx:HSORT==='tx'?h=>h.tx:h=>h.rx+h.tx;
+ const hs=(s.net.hosts||[]).slice().sort((a,b)=>key(b)-key(a)).slice(0,40);const mx=Math.max(1,...hs.map(key));
+ $('hostN').textContent=(s.net.hosts||[]).length||'';
+ const PB={};((s.tail||{}).peers||[]).forEach(p=>PB[p.ip]=p.name);
+ setHTML($('hosts'),hs.map(h=>{const nm=PB[h.ip]||(h.host&&h.host!=='-'?h.host:h.ip),c=HCLS[h.cls]||HCLS.internet;
+  const ps=(h.procs||[]).slice(0,4).map(n=>`<span class="pp" data-fk="proc" data-v="${esc(n)}" data-l="${esc(friendly(n)||n)}">${esc(friendly(n)||n)}</span>`).join(' · ')+((h.procs||[]).length>4?` +${h.procs.length-4}`:'');
+  const sub=(nm!==h.ip?h.ip:'')+(h.ports&&h.ports.length?(nm!==h.ip?' ':'')+':'+h.ports.slice(0,3).join(','):'');
+  return `<div class="hr" data-fk="host" data-v="${esc(h.ip)}" data-l="${esc(nm)}"><div class="h1">${I(c[0],c[1])}<span class="hn">${esc(nm)}</span><span class="q">↓${fB(h.rx)}</span><span class="q tx">↑${fB(h.tx)}</span></div>`+
+   `<div class="h2"><span class="hip">${esc(sub)}</span><span class="hps">${ps}${h.n>1?' ×'+h.n:''}</span></div><i class="hb" style="width:calc((100% - 34px) * ${(key(h)/mx).toFixed(3)});background:${rgba(c[2],1)}"></i></div>`}).join('')||'<div class="hr d">—</div>')}
+function kv(id,items){setHTML($(id),items.filter(Boolean).map(([k,v])=>`<span><i>${esc(k)}</i>${esc(v)}</span>`).join(''))}
+function updPane(s){const SELF=new Set((s.panel||{}).pids||[]),TS=s.tail||{},N=s.nics||[],tu=N.find(x=>x.tail)||{rx:0,tx:0};
+ const pv=t=>{if($('popV').textContent!==t)$('popV').textContent=t},cv=(id,t)=>{const e=$('cv-'+id);if(e)setHTML(e,t)},two=(a,b)=>`${a}<br>${b}`;
+ const pc=v=>Math.round(v)+'%';
+ if(POP==='cpu'){pv(`${s.cpu.total.toFixed(0)}% · ${s.cpu.n} ${T('核')}`);cv('cpu',s.cpu.total.toFixed(0)+'%');chart('cpu',[[hist.cpu,COL.cpu,1]],100,pc);
+  const cores=$('cores');if(cores.children.length!==s.cpu.per.length){cores.innerHTML=s.cpu.per.map(()=>'<div><i></i></div>').join('');$('corelab').innerHTML=s.cpu.labels.map((l,i)=>`<span>${l}${i}</span>`).join('')}
+  s.cpu.per.forEach((v,i)=>{const d=cores.children[i].firstChild;d.style.height=v+'%';d.style.setProperty('--c',pct2col(v))});
+  const K=s.cpu.kinds||{},ks=Object.keys(K);
+  kv('kv-cpu',[...(ks.length>1?ks.map(k=>[kindName(K[k]),String(s.cpu.labels.filter(x=>x===k).length)]):[]),[T('负载'),s.cpu.load.map(x=>(+x).toFixed(2)).join(' ')],[T('进程'),String(s.procs.count)]]);
+  setHTML($('t-cpu'),(s.procs.cpu||[]).slice(0,10).map(p=>`<tr ${fkp(p)}>${pname(p,SELF.has(p.pid))}<td class="r d">${p.pid}</td><td class="r">${p.cpu.toFixed(1)}%</td><td class="r d">${fS(p.mem)}</td></tr>`).join(''))}
+ else if(POP==='mem'){const lv={1:'正常',2:'警告',4:'严重'}[s.mem.pressure]||'正常';pv(`${fS(s.mem.used)} / ${fS(s.mem.total)}`);cv('mem',s.mem.pct.toFixed(0)+'%');chart('mem',[[hist.mem,COL.mem,1]],100,pc);
+  kv('kv-mem',[[T('压力'),T(lv)+(s.mem.psi!=null?` · PSI ${s.mem.psi}%`:'')],[T('缓存'),fS(s.mem.cached)],s.features&&s.features.gpu?[T('显存'),fS(s.gpu.mem_used)]:null,[T('交换'),`${fS(s.mem.swap_used)} / ${fS(s.mem.swap_total)}`]]);
+  setHTML($('t-mem'),(s.procs.mem||[]).map(p=>`<tr ${fkp(p)}>${pname(p,SELF.has(p.pid))}<td class="r d">${p.pid}</td><td class="r">${fS(p.mem)}</td></tr>`).join('')||'<tr><td class="d">—</td></tr>')}
+ else if(POP==='gpu'){const g=s.gpu;pv(`${g.util??'-'}%${g.temp!=null?' · '+g.temp+'°C':''}${g.power!=null?' · '+g.power+' W':''}`);cv('gpu',(g.util??'-')+'%');chart('gpu',[[hist.gpu,COL.gpu,1]],100,pc);
+  $('w-gt').hidden=g.temp==null;$('w-gw').hidden=g.power==null;
+  cv('gt',(g.temp??'-')+'°C');chart('gt',[[hist.gt,COL.disk,1]],60,v=>v.toFixed(0)+'°C');cv('gw',(g.power??'-')+' W');chart('gw',[[hist.gw,COL.mem,1]],20,v=>v.toFixed(0)+' W');
+  kv('kv-gpu',[[g.name||'GPU',''],g.clock_sm?[T('频率'),g.clock_sm+' MHz']:null,g.pstate!=null?['P','P'+g.pstate]:null,g.mem_used!=null?[T('显存'),fS(g.mem_used)+(g.mem_total?' / '+fS(g.mem_total):'')]:null]);
+  const c2p={};(s.models||[]).forEach(m=>{if(m.ctr_id)c2p[m.ctr_id]=m});
+  setHTML($('t-gpu'),(g.procs||[]).map(p=>{const m=c2p[p.ctr];return `<tr ${m?`data-fk="model" data-v="${m.port}" data-l="${esc((m.models||[])[0]||m.port)}"`:fkp(p)}>${pname(p,false)}<td class="d">${m?esc(m.container)+' :'+m.port:''}</td><td class="r d">${p.pid}</td><td class="r">${fS(p.mem)}</td></tr>`}).join('')||'<tr><td class="d">—</td></tr>')}
+ else if(POP==='models'){const MS=s.models||[],mg=s.manager;pv(`${MS.length} · ${(s.tok||0).toFixed(1)} tok/s`);cv('models',(s.tok||0).toFixed(1)+' tok/s');chart('models',[[hist.tok,COL.ai,1]],10,v=>v.toFixed(0)+' tok/s');
+  const fd=x=>{if(x==null)return '-';x=Math.floor(x);const d=Math.floor(x/86400),h=Math.floor(x%86400/3600),mi=Math.floor(x%3600/60);return d?`${d}d${h}h`:h?`${h}h${mi}m`:`${mi}m`};
+  const tk=v=>(v||0).toFixed(v>=10?0:1);
+  setHTML($('t-models'),MS.map(m=>{const nm=(m.models||[])[0]||m.display||'-',st=m.status==='ok'?['c-ok',T('正常')]:m.status==='loading'?['c-load',T('加载中')]:['c-crit',T('异常')];
+   return `<tr data-fk="model" data-v="${m.port}" data-l="${esc(nm)}"><td class="nm">${I('sparkles',m.status==='ok'?'c-ai':st[0])}${esc(nm)}</td><td class="d">:${m.port} ${esc(m.engine)}</td><td class="r ${st[0]}">${st[1]}</td><td class="r d">${fd(m.uptime_s)}</td></tr>`+
+    `<tr data-fk="model" data-v="${m.port}" data-l="${esc(nm)}"><td class="d ind">${T('运行')} ${m.running??'-'} · ${T('排队')} ${m.waiting??'-'}</td><td class="d">↑${tk(m.prompt_tps)} ↓${tk(m.gen_tps)}</td><td class="r d">KV ${m.kv!=null?(m.kv*100).toFixed(0)+'%':'-'}</td><td class="r d">${m.gpu_mem?fS(m.gpu_mem):'-'}</td></tr>`}).join('')+
+   (mg?`<tr><td class="nm">${I('layers',mg.ok?'c-ok':'c-crit')}manager</td><td class="d">:${mg.port} · ${mg.slots||0}</td><td class="r ${mg.ok?'c-ok':'c-crit'}">${mg.ok?T('正常'):T('异常')}</td><td></td></tr>`:''))}
+ else if(POP==='disk'){pv(`${T('读')} ${fB(s.disk.r)} · ${T('写')} ${fB(s.disk.w)}`);cv('dr',fB(s.disk.r));cv('dw',fB(s.disk.w));chart('dr',[[hist.dr,COL.disk,1]],10240,fB);chart('dw',[[hist.dw,COL.disk,1]],10240,fB);
+  setHTML($('t-disk'),s.disk.disks.map(d=>`<tr><td>${I('drive')}${esc(d.name)}</td><td class="r">${T('读')} ${fB(d.r)}</td><td class="r">${T('写')} ${fB(d.w)}</td><td class="r d">${(d.riops+d.wiops).toFixed(0)} IOPS</td></tr>`).join('')+
+   s.disk.vols.map(v=>`<tr><td>${I('folder')}${esc(v.mount)}</td><td class="r" colspan=2>${T('剩余')} ${fS(v.free)} / ${fS(v.total)}</td><td class="r d">${v.pct}%</td></tr>`).join('')+
+   (s.disk.top||[]).slice(0,8).map(d=>`<tr ${fkp(d)}>${pname(d,SELF.has(d.pid))}<td class="r d">${T('读')} ${fB(d.r)}</td><td class="r d">${T('写')} ${fB(d.w)}</td><td></td></tr>`).join(''))}
+ else if(POP==='net'){pv(rates(s.net.rx,s.net.tx));const e0=N.find(x=>x.main)||{rx:0,tx:0,name:'eth'},e1=N.find(x=>x.wifi&&!x.main)||{rx:0,tx:0};if($('cl-e0').textContent!==e0.name)$('cl-e0').textContent=e0.name;
+  cv('e0',two('↓'+fB(e0.rx),'↑'+fB(e0.tx)));cv('e1',e1.ip?two('↓'+fB(e1.rx),'↑'+fB(e1.tx)):T('未连接'));cv('ts',two('↓'+fB(tu.rx),'↑'+fB(tu.tx)));
+  chart('e0',[[hist.e0r,COL.lan,1],[hist.e0t,WHITE,0]],10240,fB);chart('e1',[[hist.e1r,COL.lan,1],[hist.e1t,WHITE,0]],10240,fB);chart('ts',[[hist.tr,COL.tail,1],[hist.tt,WHITE,0]],10240,fB);
+  const c=s.net.conn||{};kv('kv-net',[['TCP',String(c.tcp)],['UDP',String(c.udp)],[T('已建立'),String(c.est)],[T('监听'),String(c.listen)]]);
+  setHTML($('t-net'),(s.net.procs||[]).filter(p=>p.rx+p.tx>0).slice(0,12).map(p=>`<tr ${fkp(p)}>${pname(p,SELF.has(p.pid))}<td class="r d">${p.pid||''}</td><td class="r">↓${fB(p.rx)}</td><td class="r">↑${fB(p.tx)}</td></tr>`).join('')||'<tr><td class="d">—</td></tr>')}
+ else if(POP==='tail'){const pe=TS.peers||[];pv(`${pe.filter(p=>p.online).length}/${pe.length}`);cv('tail',two('↓'+fB(tu.rx),'↑'+fB(tu.tx)));chart('tail',[[hist.tr,COL.tail,1],[hist.tt,WHITE,0]],10240,fB);
+  kv('kv-tail',[[T('出口'),TS.exit_node||T('无')],[T('在线'),`${pe.filter(p=>p.online).length}/${pe.length}`]]);
+  setHTML($('t-tail'),pe.map(p=>`<tr data-fk="peer" data-v="${esc(p.name)}" data-l="${esc(p.name)}"><td class="nm">${I('laptop',p.online?(p.exit?'c-exit':'c-ok'):'c-off')}${esc(p.name)}${p.exit?'<span class="badge b-exit">'+T('出口')+'</span>':''}${p.active?'<span class="badge b-act">'+T('活跃')+'</span>':''}</td><td class="d">${esc(p.ip)}${p.online?(p.cur?' · '+T('直连'):(p.relay?' · '+esc(p.relay):'')):''}</td><td class="r">↓${fB(p.rx)}</td><td class="r">↑${fB(p.tx)}</td></tr>`).join(''))}
+ else if(POP==='ping'){const PC=[[62,224,255],[91,140,255],[255,204,51],[179,107,255],[77,255,154],[255,92,168]];const pl=s.ping||[],hops=(s.topo||{}).hops||[];
+  const ip=pl.find(p=>p.role==='inet')||pl[0];pv(ip&&ip.ms!=null?ip.ms.toFixed(1)+' ms':'');
+  const pn=p=>{const m=/^hop(\d)$/.exec(p.role||'');return m?hopLabel(hops[+m[1]]||{name:p.name},+m[1]):(p.name||p.ip)};
+  chart('ping',pl.map((p,i)=>[PH[p.ip]||[],PC[i%PC.length],0]),20,v=>v.toFixed(0)+' ms');
+  setHTML($('t-ping'),pl.map((p,i)=>`<tr><td>${I('timer',p.ms==null?'c-crit':p.ms<30?'c-ok':p.ms<100?'c-exit':'c-warn')}<span class="dot" style="background:${rgba(PC[i%PC.length],1)}"></span>${esc(pn(p))}</td><td class="d">${esc(p.ip)}</td><td class="r">${p.ms==null?T('超时'):p.ms.toFixed(1)+' ms'}</td></tr>`).join(''))}
+ else if(POP==='alert'){pv(String(ALIST.length))}
+ else if(POP==='self'){const b=(s.panel||{}).backend||{};cv('self',(b.cpu??0).toFixed(1)+'%');chart('self',[[hist.self,COL.mem,1]],5,v=>v.toFixed(1)+'%')}
+ }
+function selfPanel(s){const P=s.panel||{},b=P.backend||{};const mine=(P.clients||[]).find(c=>c.cid===CID);
+ const pct=v=>v==null?'…':v.toFixed(1)+'%';
+ {const e=$('rv-self'),t=fP1(b.cpu);if(e.textContent!==t)e.textContent=t}if(POP==='self')$('popV').textContent=`${pct(b.cpu)} · ${fS(b.rss)}`+(mine&&mine.cpu!=null?` · ${T('本页')} ${mine.cpu.toFixed(0)}%`:'');
+ if(POP!=='self')return;
+ let html=`<div class="selfbox"><table><tr><td>${I('gauge','c-self')}${T('后端')} syforce${s.features&&s.features.demo?' · '+T('演示'):''}</td><td class="r">${pct(b.cpu_self)}</td><td class="r d">${fS(b.rss)}</td></tr><tr><td class="d ind">${T('子进程')}</td><td class="r">${pct(b.cpu_children)}</td><td class="r d">${b.threads||'-'} ${T('线程')}</td></tr></table></div>`;
+ (P.clients||[]).forEach(c=>{const me=c.cid===CID,bc=c.beacon;
+  const title=me?T('本页'):(c.local?T('本机'):T('远程')+' '+esc(c.ip));
+  html+=`<div class="selfbox"><table><tr><td>${I('monitor')}<b>${title}</b></td><td class="r">${c.cpu!=null?c.cpu.toFixed(1)+'%':''}</td><td class="r d">${c.rss?fS(c.rss):''}</td></tr>`;
+  if(bc)html+=`<tr><td class="d ind" colspan=3>${(bc.fps||0).toFixed(0)} fps · ${(bc.js_ms||0).toFixed(1)} ms · ${bc.particles|0}/${bc.maxp|0}</td></tr>`;
+  (c.procs||[]).forEach(p=>html+=`<tr><td class="d ind">${esc(T(p.role))}</td><td class="r">${p.cpu==null?'…':p.cpu.toFixed(1)+'%'}</td><td class="r d">${fS(p.rss)}</td></tr>`);
+  html+='</table></div>'});
+ setHTML($('selfp'),html)}
+function summary(s){const out=[];(s.models||[]).filter(m=>(m.gen_tps||0)>.5).forEach(m=>out.push(`${(m.models||[])[0]||':'+m.port} ${(m.gen_tps).toFixed(0)} tok/s`));const np=(s.net.procs||[])[0];
+ if(np&&np.rx+np.tx>100*1024)out.push(`${short(np)} ${np.rx>=np.tx?'↓':'↑'} ${fB(Math.max(np.rx,np.tx))}`);
+ const cp=(s.procs.cpu||[])[0];if(cp&&cp.cpu>15)out.push(`${short(cp)} ${cp.cpu.toFixed(0)}%`);
+ if(s.cpu.total>50)out.push(`CPU ${s.cpu.total.toFixed(0)}%`);
+ if((s.gpu.util||0)>10)out.push(`GPU ${s.gpu.util}%`);
+ if(s.disk.r+s.disk.w>5*MB)out.push(`${T('磁盘')} ${s.disk.r>s.disk.w?T('读'):T('写')} ${fB(Math.max(s.disk.r,s.disk.w))}`);
+ ((s.tail||{}).peers||[]).filter(p=>p.rx+p.tx>50*1024).slice(0,2).forEach(p=>out.push(`${p.name} ${fB(p.rx+p.tx)}`));
+ if(s.mem.pressure>1)out.push(T('内存压力'));
+ return out.length?out.join(' · '):T('空闲')}
+// ---------- alerts ----------
+const KIND2NODE={net:'en0',cpu:'cpu',gpu:'gpu',disk:'disk',mem:'mem'};const ALIST=[];
+function alertText(a){const v=a.val||'',sj=a.subj||'',fr=sj&&friendly(sj)||sj;
+ switch(a.code){case 'disk_r':case 'disk_w':return `${T('磁盘')} ${a.code==='disk_r'?T('读'):T('写')} ${v}${sj?' · '+fr:''}`;case 'mempsi':case 'memlow':return `${T('内存压力')} ${v}`;
+  case 'cpu':return `CPU ${v}${sj?' · '+fr:''}`;case 'gpu':case 'gputemp':return `GPU ${v}`;case 'model_down':return `${sj} ${T('异常')} ${v}`;case 'talker':return `${fr} ${v}`;default:return a.text||a.title||''}}
+function addAlert(a,live,redraw){if(!redraw){ALIST.push(a);if(ALIST.length>80)ALIST.shift()}const box=$('alerts');const d=document.createElement('div');d.className='a '+a.level;d.innerHTML=`${I(a.level==='info'?'info':'alert',{crit:'c-crit',warn:'c-warn',info:'c-info'}[a.level]||'c-warn')}<span class="t">${esc(a.time.slice(11))}</span>${esc(alertText(a))}`;box.insertBefore(d,box.firstChild);while(box.children.length>80)box.lastChild.remove();
+ if(!live)return;const t=document.createElement('div');t.className='toast '+a.level;t.innerHTML=`${I('zap')}${esc(alertText(a))}<small>${esc(a.time.slice(11))}</small>`;$('toasts').appendChild(t);
+ setTimeout(()=>t.classList.add('out'),6000);setTimeout(()=>t.remove(),6700);while($('toasts').children.length>3)$('toasts').firstChild.remove();
+ let nk=KIND2NODE[a.kind]||'me';if(a.kind==='model'){const p=(a.key.match(/_(\d+)$/)||[])[1];if(p)nk='m:'+p}
+ if(a.key&&a.key.startsWith('nic_')){const nm=a.key.slice(4).replace(/_(rx|tx)\d*$/,''),x=(S&&S.nics||[]).find(n=>n.name===nm);nk=x&&x.tail?'ts':x&&x.wifi&&!x.main?'en1':'en0'}
+ [nk,'me'].forEach(k=>{const n=nodes.get(k);if(n){n.shock=1.5;n.shockCol=a.level==='crit'?[255,77,109]:a.level==='info'?COL.lan:COL.disk}})}
+// ---------- self-measurement beacon (lets the panel show what this tab costs) ----------
+const CID=Math.random().toString(36).slice(2,10);const PF={frames:0,js:0,t:performance.now()};
+function beacon(){const now=performance.now(),el=(now-PF.t)/1000;
+ const d={cid:CID,fps:PF.frames/el,frame_ms:PF.frames?el*1000/PF.frames:0,js_ms:PF.frames?PF.js/PF.frames:0,js_pct:PF.js/(el*10),particles:particles.length,maxp:MAXP,vis:document.visibilityState,
+  ua:((navigator.userAgent.match(/(Edg|Chrome|Firefox|Version)\/\d+/)||[''])[0]).replace('Version','Safari')+' · '+MODE+' · DPR '+DPR,w:W,h:H,mode:MODE};
+ PF.frames=0;PF.js=0;PF.t=now;fetch('/api/beacon',{method:'POST',body:JSON.stringify(d),keepalive:true}).catch(()=>{})}
+setInterval(beacon,2000);
+// ---------- stream ----------
+let es=null;
+function render(){if(!S||document.hidden)return;layout(S);sidebar(S)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){lastDraw=0;render()}});
+async function init(){
+ try{CFG=await (await fetch('/api/config')).json()||{}}catch(e){CFG={}}
+ if(!qlang&&!localStorage.getItem(LS+'Lang')&&['zh','en','ja'].includes(CFG.language))LANG=CFG.language;
+ if(!qmode&&!localStorage.getItem(LS+'Mode')&&MODES[CFG.fps_mode])MODE=CFG.fps_mode;
+ applyLang();fit();try{const h=await (await fetch('/api/history')).json();
+ for(let i=0;i<h.t.length;i++){push('cpu',h.cpu[i]);push('mem',h.mem[i]);push('gpu',h.gpu[i]);push('dr',h.disk_r[i]);push('dw',h.disk_w[i]);push('e0r',h.net_rx[i]);push('e0t',h.net_tx[i]);push('tr',h.tail_rx[i]);push('tt',h.tail_tx[i]);push('tok',h.tok[i])}
+ (h.alerts||[]).forEach(a=>addAlert(a,false))}catch(e){}
+ connect();requestAnimationFrame(loop);
+ // URL helpers (handy for screenshots / kiosks): ?lang=en ?mode=smooth ?pop=cpu ?focus=gpu|<process name>|<node key>
+ const qp=(location.search.match(/pop=(\w+)/)||[])[1],qf=(location.search.match(/focus=([^&]+)/)||[])[1];
+ if(qp||qf)setTimeout(()=>{if(qf){const v=decodeURIComponent(qf);let n=nodes.get(v);if(!n)for(const m of nodes.values())if((m.pname&&(m.pname===v||m.pname.startsWith(v)))||m.label===v){n=m;break}if(n)setFocus(focusFromNode(n))}
+  if(qp&&PANES[qp])openPop(qp)},2500)}
+function connect(){es=new EventSource('/events?cid='+CID);
+ es.addEventListener('snap',ev=>{S=JSON.parse(ev.data);pushHist(S);render();$('conn').className='chip ok';$('conn').lastChild.textContent=T('实时')});
+ es.addEventListener('alert',ev=>addAlert(JSON.parse(ev.data),!document.hidden));
+ es.onerror=()=>{$('conn').className='chip bad';$('conn').lastChild.textContent=T('断开')}}
+init();
+</script></body></html>

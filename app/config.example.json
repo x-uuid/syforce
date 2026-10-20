@@ -1,0 +1,32 @@
+{
+  "port": 9001,
+  "bind": "0.0.0.0",
+  "title": "syforce",
+  "host_label": "",
+  "language": "zh",
+  "fps_mode": "eco",
+  "names": {
+    "192.168.1.1": "Router",
+    "my-laptop": "laptop"
+  },
+  "hide": ["some-private-peer", "192.168.1.50"],
+  "ping_targets": [
+    {"name": "DNS", "ip": "1.1.1.1", "role": "inet"}
+  ],
+  "topology": {
+    "gateway": "auto",
+    "traceroute_hops": 2,
+    "traceroute_target": "1.1.1.1",
+    "refresh_s": 600
+  },
+  "tailscale": {"enabled": "auto", "binary": ""},
+  "models": {
+    "enabled": "auto",
+    "ports": [8000, 8001, 8002, 11434],
+    "autodiscover": true,
+    "manager_port": null,
+    "skip_ports": [22, 53, 631]
+  },
+  "docker": {"enabled": "auto"},
+  "gpu": {"enabled": "auto"}
+}

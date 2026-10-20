@@ -1,0 +1,22 @@
+# systemd USER unit. Install:
+#   mkdir -p ~/.config/systemd/user && cp syforce.service ~/.config/systemd/user/
+#   (edit paths below if the kit is not at ~/syforce)
+#   systemctl --user daemon-reload && systemctl --user enable --now syforce
+#   sudo loginctl enable-linger "$USER"     # keep running after logout / start at boot
+[Unit]
+Description=syforce — OS force-directed graph (port 9001)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/syforce/app
+ExecStart=%h/syforce/app/venv/bin/python %h/syforce/app/server.py --port 9001
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=5
+Nice=10
+CPUQuota=30%
+MemoryMax=400M
+
+[Install]
+WantedBy=default.target
