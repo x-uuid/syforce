@@ -5,6 +5,12 @@
   <img src="assets/brand/wordmark-tri.svg" alt="syforce" width="360">
 </picture>
 
+[![Live demo](https://img.shields.io/badge/live%20demo-syforce.ai-4cc9f0?style=flat-square)](https://syforce.ai)
+
+Live demo: https://syforce.ai · 在线演示：https://syforce.ai
+
+laptop / spark / dev · real data, sanitized
+
 # syforce
 
 **系统力导向图 · OS force-directed graph**
